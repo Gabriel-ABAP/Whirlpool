@@ -1,0 +1,1950 @@
+*&---------------------------------------------------------------------*
+*&      Form  INITIALIZATION
+*&---------------------------------------------------------------------*
+FORM initialization .
+
+  DATA: lv_proc LIKE LINE OF t_proc.
+
+  CALL FUNCTION 'ICON_CREATE'
+    EXPORTING
+      name   = icon_change_text
+      text   = 'Parâmetros'
+      info   = 'Parâmetros adicionais'
+    IMPORTING
+      result = par1
+    EXCEPTIONS
+      OTHERS = 0.
+
+  CALL FUNCTION 'ICON_CREATE'
+    EXPORTING
+      name   = icon_calculation
+      text   = 'Regras'
+      info   = 'Regras de rateio'
+    IMPORTING
+      result = par2
+    EXCEPTIONS
+      OTHERS = 0.
+
+* Execução da chamada pelo botão de parâmetros
+  PERFORM: chama_parametros,
+           carrega_parametros.
+*- Fim das alterações fase 2 - CARDOG17+++
+
+  PERFORM select_ledbo.
+  PERFORM select_perio.
+  PERFORM select_bsart.
+  PERFORM select_bstat.
+  PERFORM select_field.
+  PERFORM default_variant.
+  PERFORM select_layout.
+  PERFORM select_fcat.
+
+  v_plikz = c_plikz-real.
+
+  PERFORM select_rfcdest.
+
+  CLEAR t_tvarv.
+  SELECT *
+     FROM tvarvc
+     INTO TABLE t_tvarv
+     WHERE name = 'Z_COPA_GAR_INSTA'
+        OR name = 'Z_COPA_GAR_HKONT'
+        OR name = 'Z_COPA_GAR_BLART'
+        OR name = 'Z_COPA_GAR_AWTYP'
+        OR name = 'Z_COPA_GAR_PROC'
+        OR name = 'Z_COPA_GAR_PROC7'.
+
+  CLEAR: r_insta[].
+  LOOP AT t_tvarv INTO l_tvarv WHERE name = 'Z_COPA_GAR_INSTA'.
+    MOVE-CORRESPONDING l_tvarv TO r_insta.
+    r_insta-option = l_tvarv-opti.
+    APPEND r_insta.
+  ENDLOOP.
+
+  CLEAR: r_hkont[].
+  LOOP AT t_tvarv INTO l_tvarv WHERE name = 'Z_COPA_GAR_HKONT'.
+    MOVE-CORRESPONDING l_tvarv TO r_hkont.
+    r_hkont-option = l_tvarv-opti.
+    APPEND r_hkont.
+  ENDLOOP.
+
+  CLEAR: r_blart[].
+  LOOP AT t_tvarv INTO l_tvarv WHERE name = 'Z_COPA_GAR_BLART'.
+    MOVE-CORRESPONDING l_tvarv TO r_blart.
+    r_blart-option = l_tvarv-opti.
+    APPEND r_blart.
+  ENDLOOP.
+
+  CLEAR: r_awtyp[].
+  LOOP AT t_tvarv INTO l_tvarv WHERE name = 'Z_COPA_GAR_AWTYP'.
+    MOVE-CORRESPONDING l_tvarv TO r_awtyp.
+    r_awtyp-option = l_tvarv-opti.
+    APPEND r_awtyp.
+  ENDLOOP.
+
+  CLEAR: lv_proc.
+  LOOP AT t_tvarv INTO l_tvarv WHERE name = 'Z_COPA_GAR_PROC'.
+    lv_proc-sign   = l_tvarv-sign.
+    lv_proc-option = l_tvarv-opti.
+    lv_proc-low    = l_tvarv-low(4).
+    lv_proc-high   = l_tvarv-high(4).
+    APPEND lv_proc TO t_proc.
+  ENDLOOP.
+
+  CLEAR: lv_proc.
+  LOOP AT t_tvarv INTO l_tvarv WHERE name = 'Z_COPA_GAR_PROC7'.
+    lv_proc-sign   = l_tvarv-sign.
+    lv_proc-option = l_tvarv-opti.
+    lv_proc-low    = l_tvarv-low(4).
+    lv_proc-high   = l_tvarv-high(4).
+    APPEND lv_proc TO t_proc7.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_LEDBO
+*&---------------------------------------------------------------------*
+FORM select_ledbo .
+
+  PERFORM format_ledbo USING '10' CHANGING v_ledbo.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  FORMAT_LEDBO
+*&---------------------------------------------------------------------*
+FORM format_ledbo  USING    p_source
+                   CHANGING p_target.
+
+  DATA lv_target LIKE v_ledbo.
+
+  CALL FUNCTION 'CONVERSION_EXIT_LEDBO_INPUT'
+    EXPORTING
+      input         = p_source
+    IMPORTING
+      output        = lv_target
+    EXCEPTIONS
+      invalid_input = 1
+      OTHERS        = 2.
+
+  IF sy-subrc IS INITIAL.
+
+    p_target = lv_target.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_PERIO
+*&---------------------------------------------------------------------*
+FORM select_perio .
+
+  CONCATENATE sy-datum+0(4) '0' sy-datum+4(2) INTO p_perio.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_BSART
+*&---------------------------------------------------------------------*
+FORM select_bsart .
+
+  DATA:
+    ls_bsart LIKE LINE OF r_bsart.
+
+  FREE r_bsart.
+  ls_bsart = 'IEQ'.
+  ls_bsart-low = 'ZCSR'.
+  APPEND ls_bsart TO r_bsart.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_BSTAT
+*&---------------------------------------------------------------------*
+FORM select_bstat .
+
+  DATA ls_bstat LIKE LINE OF r_bstat.
+
+  FREE r_bstat.
+  ls_bstat = 'IEQ'.
+  ls_bstat-low = ''.
+  APPEND ls_bstat TO r_bstat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_FIELD
+*&---------------------------------------------------------------------*
+FORM select_field .
+
+  FREE t_field.
+  APPEND 'KOKRS'      TO t_field.
+  APPEND 'BUKRS'      TO t_field.
+  APPEND 'BUDAT'      TO t_field.
+  APPEND 'VRGAR'      TO t_field.
+  APPEND 'VV007'      TO t_field.
+  APPEND 'KNDNR'      TO t_field.
+  APPEND 'ARTNR'      TO t_field.
+  APPEND 'WERKS'      TO t_field.
+  APPEND 'VV049'      TO t_field.     "novo campo valor
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_LAYOUT
+*&---------------------------------------------------------------------*
+FORM select_layout .
+
+  s_layout-zebra      = abap_true.
+  s_layout-cwidth_opt = abap_true.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_FCAT
+*&---------------------------------------------------------------------*
+FORM select_fcat .
+
+  DATA:
+    lt_fcat LIKE t_fcat,
+    ls_fcat LIKE LINE OF t_fcat.
+
+  FREE t_fcat.
+
+  CALL FUNCTION 'LVC_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name       = 'ZSCOPA0002'
+    CHANGING
+      ct_fieldcat            = lt_fcat
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+
+  IF sy-subrc IS INITIAL.
+
+    CLEAR ls_fcat.
+    ls_fcat-fieldname = 'ICONE'.
+    ls_fcat-icon    = abap_true.
+    ls_fcat-hotspot = abap_true.
+    APPEND ls_fcat TO lt_fcat.
+
+    APPEND LINES OF lt_fcat TO t_fcat.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  START_OF_SELECTION
+*&---------------------------------------------------------------------*
+FORM start_of_selection.
+
+  DATA:
+    ls_work  LIKE LINE OF t_work,
+    ls_copa  LIKE LINE OF t_copa,
+    ls_cust  LIKE LINE OF t_cust,
+    ls_data  LIKE LINE OF t_data,
+    lv_erlos TYPE ce11000-erlos.
+
+  FREE t_data.
+
+* 1° processamento - Recuperação de dados de BW e
+*                    montagem do BD de garantia
+  IF NOT p_rateio IS INITIAL.
+* Buscar dados no BW
+    PERFORM: import_view_bw,
+             mount_bw_mirror.
+    LEAVE LIST-PROCESSING.
+  ENDIF.
+
+*  Selecionar dados do espelho BW
+  PERFORM select_bw.
+
+*  Selecionar Memória de cálculo
+  PERFORM select_cust.
+
+  CASE abap_true.
+    WHEN p_exec.
+      PERFORM: process_data,
+               fill_data CHANGING t_data.
+
+    WHEN OTHERS.
+      LOOP AT t_cust INTO ls_cust.
+        CLEAR ls_data.
+        MOVE-CORRESPONDING ls_cust TO ls_data.
+        APPEND ls_data TO t_data.
+      ENDLOOP.
+
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  NEW_DATE
+*&---------------------------------------------------------------------*
+FORM new_date  USING    p_source
+                        p_signal
+                        p_mouth
+               CHANGING p_target.
+
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = p_source
+      days      = 00
+      months    = p_mouth
+      signum    = p_signal
+      years     = 0000
+    IMPORTING
+      calc_date = p_target.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_CUST
+*&---------------------------------------------------------------------*
+FORM select_cust .
+
+  FREE t_cust.
+
+  SELECT *
+  INTO TABLE t_cust
+  FROM  ztcopa0002
+  WHERE erkrs EQ p_erkrs
+*  AND   ledbo EQ v_ledbo
+*  AND   versi EQ v_versi
+   AND  perio EQ p_perio
+   AND  bukrs IN s_bukrs
+*  AND   kndnr IN s_kndnr
+  AND   artnr IN s_artnr.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  END_OF_SELECTION
+*&---------------------------------------------------------------------*
+FORM end_of_selection.
+
+  DATA:
+    lt_return TYPE bapiret2_t,
+    ls_return TYPE bapiret2,
+    ls_data   LIKE LINE OF t_data.
+
+
+  CASE abap_true.
+    WHEN p_exec.
+      PERFORM execute_bapi TABLES lt_return USING abap_false.
+    WHEN p_reve.
+      PERFORM execute_bapi TABLES lt_return USING abap_true.
+
+  ENDCASE.
+
+  CALL FUNCTION 'RMSL325_DISPLAY_MSG_POPUP'
+    EXPORTING
+      it_message = lt_return.
+
+  IF NOT lines( t_data ) IS INITIAL.
+    CLEAR ls_data.
+    LOOP AT lt_return INTO ls_return.
+      MOVE ls_return-message TO ls_data-msg.
+      INSERT ls_data INTO t_data INDEX sy-tabix.
+    ENDLOOP.
+
+    MESSAGE 'Concluido'(100) TYPE 'S'.
+    PERFORM display_screen.
+
+  ELSE.
+    MESSAGE 'Não existem informações a serem processadas'(101) TYPE 'I'.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  FILL_ENTRY
+*&---------------------------------------------------------------------*
+FORM fill_entry  TABLES   p_entry   STRUCTURE bapi_copa_data
+                 USING    p_custom  TYPE zscopa0002_n2
+                          p_budat   TYPE bkpf-budat
+                          p_record
+                          p_reverse.
+
+  DATA:
+    ls_field LIKE LINE OF t_field,
+    ls_entry LIKE LINE OF p_entry.
+
+  FIELD-SYMBOLS:
+    <value> TYPE any.
+
+  FREE p_entry.
+
+  LOOP AT t_field INTO ls_field.
+
+    CLEAR ls_entry.
+
+    ls_entry-record_id = p_record.
+    ls_entry-fieldname = ls_field.
+
+    ASSIGN COMPONENT ls_field OF STRUCTURE p_custom TO <value>.
+    IF <value> IS ASSIGNED.
+      ls_entry-value = <value>.
+    ENDIF.
+    UNASSIGN <value>.
+
+    CASE ls_field.
+
+      WHEN 'BUDAT'.
+
+        ls_entry-value = p_budat.
+
+      WHEN 'VV007' OR 'VV049'.   "Novo campo valor.
+
+        IF p_reverse EQ abap_true.
+          ls_entry-value = ls_entry-value * -1.
+        ENDIF.
+
+        ls_entry-currency = 'BRL'.
+
+    ENDCASE.
+
+    APPEND ls_entry TO p_entry.
+
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GET_RETURN
+*&---------------------------------------------------------------------*
+FORM get_return  TABLES   p_return STRUCTURE bapiret2
+                 USING    p_types
+                 CHANGING p_found
+                          p_erro.
+
+  DATA: ls_return TYPE bapiret2.
+
+  LOOP AT p_return INTO ls_return WHERE type CA p_types.
+    EXIT.
+  ENDLOOP.
+
+  IF sy-subrc IS INITIAL.
+    p_found = abap_true.
+    p_erro = ls_return-message.
+  ELSE.
+    p_found = abap_false.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_DATA
+*&---------------------------------------------------------------------*
+FORM display_data .
+
+  DATA:
+    lo_event  TYPE REF TO cl_9000.
+
+  IF o_grid IS INITIAL.
+
+    CREATE OBJECT o_container
+      EXPORTING
+        parent         = cl_gui_container=>screen0
+        container_name = 'CC_9000'.
+
+    CREATE OBJECT o_grid
+      EXPORTING
+        i_parent = o_container.
+
+    CALL METHOD o_grid->set_table_for_first_display
+      EXPORTING
+*       i_save          = 'A'
+*       i_default       = 'X'
+*       is_variant      = g_main-variant
+        is_layout       = s_layout
+*       it_toolbar_excluding = g_main-exclude
+      CHANGING
+        it_outtab       = t_data
+        it_fieldcatalog = t_fcat.
+
+    CREATE OBJECT lo_event.
+    SET HANDLER lo_event->handle_hotspot_click  FOR o_grid.
+
+  ELSE.
+
+    o_grid->refresh_table_display( ).
+
+  ENDIF.
+
+ENDFORM.
+
+CLASS cl_9000 IMPLEMENTATION.
+
+  METHOD handle_hotspot_click.
+
+    DATA: ls_data LIKE LINE OF t_data.
+
+    READ TABLE t_data INTO ls_data INDEX es_row_no-row_id.
+    IF sy-subrc IS INITIAL.
+
+      CASE e_column_id-fieldname.
+        WHEN 'ICONE'.
+
+      ENDCASE.
+
+    ENDIF.
+
+  ENDMETHOD.                    "handle_hotspot_click
+
+ENDCLASS.                    "cl_9000 IMPLEMENTATION
+*&---------------------------------------------------------------------*
+*&      Form  GET_PERCENT
+*&---------------------------------------------------------------------*
+FORM get_percent  USING    p_divvy
+                           p_divis
+                  CHANGING p_percent.
+
+  IF p_divis IS INITIAL.
+    p_percent = 0.
+  ELSE.
+    p_percent = ( p_divvy / p_divis ).
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_BW
+*&---------------------------------------------------------------------*
+FORM select_bw.
+
+  DATA: t_copa2 TYPE tt_ztcopa0013,
+        ls_copa LIKE LINE OF t_copa2.
+
+  FREE t_copa.
+
+  SELECT * FROM ztcopa0013
+  INTO TABLE t_copa
+  WHERE "paledger EQ v_ledbo
+*  AND vrgar EQ 'F'
+*  AND versi EQ v_versi
+       perio EQ p_perio
+*  AND kndnr IN s_kndnr
+   AND artnr IN s_artnr
+   AND bukrs IN s_bukrs.
+*  AND vtweg IN s_vtweg
+*  AND fkart IN s_fkart
+*  AND plikz EQ v_plikz.
+
+  IF sy-subrc NE 0.
+    DATA(lv_msg)  = 'Não existe base de rateio montada para a seleção!'.
+    MESSAGE e000(z_bc) WITH lv_msg.
+  ELSE.
+    DELETE t_copa WHERE bukrs IS INITIAL.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  GET_STATS_ICONE
+*&---------------------------------------------------------------------*
+FORM get_stats_icone  USING    p_stats
+                      CHANGING p_icone.
+
+  CASE p_stats.
+    WHEN c_stats-active.
+      p_icone = c_icone-active.
+    WHEN c_stats-reverse.
+      p_icone = c_icone-reverse.
+    WHEN c_stats-inactive.
+      p_icone = c_icone-inactive.
+    WHEN c_stats-check.
+      p_icone = c_icone-checked.
+    WHEN c_stats-error.
+      p_icone = c_icone-error.
+    WHEN OTHERS.
+      p_icone = c_icone-empty.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_RFCDEST
+*&---------------------------------------------------------------------*
+FORM select_rfcdest .
+
+  DATA:
+    lt_parameter TYPE TABLE OF crmrfcpar,
+    ls_parameter LIKE LINE OF lt_parameter,
+    lv_consumer  TYPE crmconsum-consumer    VALUE 'CR7',
+    lv_type      TYPE bapicrmdh2-dwnloadtyp VALUE '*',
+    lv_object    TYPE crmrfcpar-objname     VALUE 'SALESDOCUMENT',
+    lv_error     TYPE sy-lisel.
+
+  CLEAR v_crm.
+
+  CALL FUNCTION 'CRM0_READ_RFC_DEST'
+    EXPORTING
+      i_consumer      = lv_consumer
+      i_download_type = lv_type
+      i_objname       = lv_object
+    TABLES
+      t_crmrfcpar     = lt_parameter
+    EXCEPTIONS
+      no_entry_found  = 1
+      OTHERS          = 2.
+
+  IF sy-subrc IS INITIAL.
+
+    READ TABLE lt_parameter INTO ls_parameter INDEX 1.
+
+    IF ls_parameter-rfcdest IS INITIAL.
+
+      lv_error = 'RFC não encontrada'.
+
+    ELSE.
+
+      CALL FUNCTION 'RFC_TRUSTED_CHECK'
+        EXPORTING
+          rfcdest       = ls_parameter-rfcdest
+        IMPORTING
+          error_message = lv_error.
+
+    ENDIF.
+
+  ELSE.
+
+    lv_error = 'RFC não definida'.
+
+  ENDIF.
+
+  IF lv_error IS INITIAL.
+
+    v_crm = ls_parameter-rfcdest.
+
+  ELSE.
+
+    MESSAGE lv_error TYPE 'I' DISPLAY LIKE 'E'.
+
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  DEFAULT_VARIANT
+*&---------------------------------------------------------------------*
+FORM default_variant .
+
+  DATA:
+        ls_variant TYPE disvariant.
+
+  s_variant-report = sy-repid.
+
+  ls_variant = s_variant.
+
+  CALL FUNCTION 'REUSE_ALV_VARIANT_DEFAULT_GET'
+    EXPORTING
+      i_save        = 'A'
+    CHANGING
+      cs_variant    = ls_variant
+    EXCEPTIONS
+      wrong_input   = 1
+      not_found     = 2
+      program_error = 3
+      OTHERS        = 4.
+
+  IF NOT sy-subrc IS INITIAL.
+    EXIT.
+  ENDIF.
+
+  PERFORM set_variant USING ls_variant.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SEARCH_VARIANT
+*&---------------------------------------------------------------------*
+FORM search_variant .
+
+  DATA:
+    ls_variant TYPE disvariant,
+    lv_exit    TYPE abap_bool.
+
+  CALL FUNCTION 'REUSE_ALV_VARIANT_F4'
+    EXPORTING
+      is_variant    = s_variant
+      i_save        = 'A'
+    IMPORTING
+      e_exit        = lv_exit
+      es_variant    = ls_variant
+    EXCEPTIONS
+      not_found     = 1
+      program_error = 2
+      OTHERS        = 3.
+
+  IF NOT sy-subrc IS INITIAL.
+    lv_exit = abap_true.
+  ENDIF.
+
+  IF NOT lv_exit IS INITIAL.
+    EXIT.
+  ENDIF.
+
+  PERFORM set_variant USING ls_variant.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  SET_VARIANT
+*&---------------------------------------------------------------------*
+FORM set_variant  USING    p_variant TYPE disvariant.
+
+  s_variant = p_variant.
+
+  p_varian = s_variant-variant.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_SCREEN
+*&---------------------------------------------------------------------*
+FORM display_screen .
+
+  DATA:
+    lt_fcat     TYPE TABLE OF slis_fieldcat_alv,
+    lt_fcat_wrk TYPE TABLE OF slis_fieldcat_alv,
+    ls_fcat     LIKE LINE OF lt_fcat,
+    ls_layout   TYPE  slis_layout_alv,
+    lv_repid    TYPE syst-repid.
+
+  lv_repid = syst-repid.
+
+  ls_layout-colwidth_optimize = abap_true.
+  ls_layout-zebra = abap_true.
+
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_structure_name       = 'ZSCOPA0002_N2'
+    CHANGING
+      ct_fieldcat            = lt_fcat
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'ICONE'.
+  ls_fcat-icon    = abap_true.
+  ls_fcat-hotspot = abap_true.
+  APPEND ls_fcat TO lt_fcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'MSG'.
+  ls_fcat-seltext_l = 'Log'.
+  ls_fcat-seltext_m = 'Log'.
+  ls_fcat-seltext_s = 'Log'.
+  ls_fcat-ctabname = 'T_DATA'.
+  ls_fcat-col_pos  = 24.
+  APPEND ls_fcat TO lt_fcat.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'MARCA'.
+  ls_fcat-seltext_l = 'Dif. Rateio'.
+  ls_fcat-seltext_m = 'Dif. Rateio'.
+  ls_fcat-seltext_s = 'Dif.Rateio'.
+  ls_fcat-ctabname = 'T_DATA'.
+  ls_fcat-col_pos  = 25.
+  MODIFY lt_fcat FROM ls_fcat TRANSPORTING fieldname
+                                           seltext_l
+                                           seltext_m
+                                           seltext_s
+                                           col_pos WHERE fieldname = 'MARCA'.
+
+  CLEAR ls_fcat.
+  ls_fcat-fieldname = 'PORCE'.
+  ls_fcat-seltext_l = '% Total'.
+  ls_fcat-seltext_m = '% Total'.
+  ls_fcat-seltext_s = '% Total'.
+  ls_fcat-ctabname = 'T_DATA'.
+  ls_fcat-col_pos  = 24.
+  MODIFY lt_fcat FROM ls_fcat TRANSPORTING fieldname
+                                           seltext_l
+                                           seltext_m
+                                           seltext_s
+                                           col_pos WHERE fieldname = 'PORCE'.
+
+  s_variant-variant = p_varian.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      i_callback_program = lv_repid
+*     i_callback_user_command = 'USER_COMMAND'
+      is_layout          = ls_layout
+      it_fieldcat        = lt_fcat
+      i_save             = 'A'
+      is_variant         = s_variant
+    TABLES
+      t_outtab           = t_data
+    EXCEPTIONS
+      program_error      = 1
+      OTHERS             = 2.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  EXECUTE_BAPI
+*&---------------------------------------------------------------------*
+FORM execute_bapi  TABLES   p_return STRUCTURE bapiret2
+                   USING    p_reverse.
+
+  DATA:
+    lt_work     TYPE TABLE OF y_work,
+    ls_work     LIKE LINE OF lt_work,
+    ls_data     LIKE LINE OF t_data,
+    ls_custom   TYPE zscopa0002_n2,
+    lt_entry1   TYPE TABLE OF bapi_copa_data,
+    lt_entry    TYPE TABLE OF bapi_copa_data,
+    lt_database TYPE TABLE OF ztcopa0002,
+    ls_database LIKE LINE OF lt_database,
+    lv_budat    TYPE bkpf-budat,
+    lv_count    TYPE integer,
+    lv_error    TYPE abap_bool,
+    lv_stats    TYPE ztcopa0002-stats,
+    lv_icone    TYPE icon_d,
+    lv_tabix    LIKE sy-tabix,
+    lv_msg      TYPE bapi_msg.
+
+  FIELD-SYMBOLS:
+    <data>  LIKE LINE OF t_data.
+
+  FREE p_return.
+
+  CONCATENATE p_perio+0(4) p_perio+5(2) '01' INTO lv_budat.
+  PERFORM new_date USING lv_budat '+' 1 CHANGING lv_budat.
+  lv_budat = lv_budat - 1.
+
+
+  LOOP AT t_data INTO ls_data.
+
+    IF ls_data-vrgar IS INITIAL.  "registros sem nenhuma venda (erlos = 0) não são lançados no CO-PA
+      CONTINUE.
+    ENDIF.
+
+    CLEAR ls_work.
+    MOVE-CORRESPONDING ls_data TO ls_work.
+    COLLECT ls_work INTO lt_work.
+
+  ENDLOOP.
+
+  LOOP AT lt_work INTO ls_work.
+
+    lv_count = lv_count + 1.
+
+    MOVE-CORRESPONDING ls_work TO ls_custom.
+
+    PERFORM fill_entry TABLES lt_entry1
+                       USING  ls_custom
+                              lv_budat
+                              lv_count
+                              p_reverse.
+
+    APPEND LINES OF lt_entry1 TO lt_entry.
+
+  ENDLOOP.
+
+  IF p_show IS INITIAL.
+    CALL FUNCTION 'BAPI_COPAACTUALS_POSTCOSTDATA'
+      EXPORTING
+        operatingconcern = p_erkrs
+        testrun          = p_check
+      TABLES
+        inputdata        = lt_entry
+        fieldlist        = t_field
+        return           = p_return.
+
+    PERFORM get_return  TABLES p_return
+                        USING 'AEX'
+                        CHANGING lv_error
+                                 lv_msg.
+  ENDIF.
+
+  IF lv_error IS INITIAL.
+    IF p_check EQ abap_true.
+      lv_stats = c_stats-check.
+    ELSE.
+      IF p_reverse IS INITIAL.
+        lv_stats = c_stats-active.
+      ELSE.
+        lv_stats = c_stats-reverse.
+      ENDIF.
+    ENDIF.
+  ELSE.
+    lv_stats = c_stats-error.
+  ENDIF.
+
+  PERFORM get_stats_icone USING    lv_stats
+                          CHANGING lv_icone.
+
+  LOOP AT t_data ASSIGNING <data>.
+
+    IF <data>-vrgar IS INITIAL.
+      <data>-stats = c_stats-nao_cons. "registros sem nenhuma venda (erlos = 0) não são lançados no CO-PA
+    ELSE.
+      <data>-stats = lv_stats.
+    ENDIF.
+
+    <data>-icone = lv_icone.
+    <data>-msg   = lv_msg.
+
+    IF NOT p_check IS INITIAL.
+      CONTINUE.
+    ENDIF.
+
+    IF NOT lv_error IS INITIAL.
+      CONTINUE.
+    ENDIF.
+
+    <data>-udate = sy-datum.
+    <data>-utime = sy-uzeit.
+    <data>-uname = sy-uname.
+
+    MOVE-CORRESPONDING <data> TO ls_database.
+
+    IF p_reverse IS NOT INITIAL.
+
+      UPDATE ztcopa0002
+      SET   stats = c_stats-inactive
+      WHERE erkrs  EQ ls_database-erkrs
+      AND   ledbo  EQ ls_database-ledbo
+      AND   versi  EQ ls_database-versi
+      AND   perio  EQ ls_database-perio
+      AND   vrgar  EQ ls_database-vrgar
+      AND   kokrs  EQ ls_database-kokrs
+      AND   bukrs  EQ ls_database-bukrs
+      AND   kndnr  EQ ls_database-kndnr
+      AND   ww008  EQ ls_database-ww008
+      AND   artnr  EQ ls_database-artnr
+      AND   zz0040 EQ ls_database-zz0040
+      AND   werks  EQ ls_database-werks
+      AND   vbelv  EQ ls_database-vbelv
+      AND   vbeln  EQ ls_database-vbeln
+      AND   saknr  EQ ls_database-saknr
+      AND   kostl  EQ ls_database-kostl
+      AND   id     EQ ls_database-id
+      AND   stats  EQ c_stats-active.
+
+    ENDIF.
+
+    APPEND ls_database TO lt_database.
+
+  ENDLOOP.
+
+  IF NOT p_check IS INITIAL.
+    EXIT.
+  ENDIF.
+
+
+  IF lv_error IS INITIAL.
+    IF p_reverse IS INITIAL.
+      MODIFY ztcopa0002 FROM TABLE lt_database.
+    ENDIF.
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'.
+  ELSE.
+    CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  F_OBJCL_GETDETAIL
+*&---------------------------------------------------------------------*
+FORM f_objcl_getdetail  USING    iv_objkey   TYPE bapi1003_key-object
+                                 iv_classnum TYPE bapi1003_key-classnum
+                CHANGING ct_char     TYPE tt_bapi1003_alloc_values_char.
+
+  DATA: lt_num    TYPE STANDARD TABLE OF bapi1003_alloc_values_num,
+        lt_curr   TYPE STANDARD TABLE OF bapi1003_alloc_values_curr,
+        lt_return TYPE STANDARD TABLE OF bapiret2.
+
+  CALL FUNCTION 'BAPI_OBJCL_GETDETAIL'
+    EXPORTING
+      objectkey       = iv_objkey
+      objecttable     = 'MARA'
+      classnum        = iv_classnum
+      classtype       = '001'
+      language        = 'P'
+    TABLES
+      allocvaluesnum  = lt_num
+      allocvalueschar = ct_char
+      allocvaluescurr = lt_curr
+      return          = lt_return.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  CHAMA_PARAMETROS
+*&---------------------------------------------------------------------*
+*       Abre tabela de parâmetros
+*----------------------------------------------------------------------*
+FORM chama_parametros.
+
+  CASE sy-ucomm.
+    WHEN 'PAR'.
+      CALL TRANSACTION 'ZBR_COPA_PAR'.
+    WHEN 'REG'.
+      CALL TRANSACTION 'ZBR_COPA_REG'.
+  ENDCASE.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  IMPORT_VIEW_BW
+*&---------------------------------------------------------------------*
+FORM import_view_bw.
+
+  DATA vl_perio(6) TYPE n.
+
+  PERFORM db_check.
+
+  vl_perio = p_perio(4) && p_perio+5(2).
+
+  CASE sy-sysid.
+    WHEN 'MC2'.
+      v_crm = 'LWDCLNT020'.
+    WHEN 'MQ0'.
+      v_crm = 'LWQCLNT300'.
+    WHEN 'MP0'.
+      v_crm = 'LWPCLNT300'.
+  ENDCASE.
+
+  CALL FUNCTION 'ZFCOPA_BD_GARANTIA' DESTINATION v_crm
+    EXPORTING
+      iv_perio          = vl_perio
+    TABLES
+      et_base_bw        = t_base_bw
+    EXCEPTIONS
+      no_data_available = 1
+      OTHERS            = 2.
+
+  IF sy-subrc <> 0.
+    MESSAGE 'Dados de CRM não recuperados. Contatar administradores'(103)  TYPE 'E'.
+  ELSE.
+    SORT: t_base_bw    BY gl_account,
+          t_ztcopa0014 BY conto.
+
+* Validação de contas do BW com a regra
+    LOOP AT t_base_bw ASSIGNING FIELD-SYMBOL(<fs_base_bw>).
+      AT NEW gl_account.
+        READ TABLE t_ztcopa0014 WITH KEY conto = <fs_base_bw>-gl_account
+                                TRANSPORTING NO FIELDS BINARY SEARCH.
+        IF sy-subrc NE 0.
+          MESSAGE e000(z_bc) WITH text-102 <fs_base_bw>-gl_account.
+          EXIT.
+        ENDIF.
+      ENDAT.
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  CARREGA_PARAMETROS
+*&---------------------------------------------------------------------*
+*       Busca tabelas de parâmetros
+*----------------------------------------------------------------------*
+FORM carrega_parametros.
+
+*- Tabela de parâmetros
+  SELECT * FROM ztcopa0012 INTO TABLE t_ztcopa0012.
+
+*- Tabela de regras de rateio
+  SELECT * FROM ztcopa0014 INTO TABLE t_ztcopa0014.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  SELECT_SETLEAF
+*&---------------------------------------------------------------------*
+FORM select_setleaf USING p_par
+                 CHANGING p_range TYPE ty_range.
+
+  DATA: r_setname TYPE RANGE OF setnamenew.
+
+  READ TABLE t_ztcopa0012 ASSIGNING FIELD-SYMBOL(<fs_ztcopa0012>)
+                                        WITH KEY par = p_par.
+
+  IF sy-subrc EQ 0.
+    APPEND VALUE #( sign   = 'I'
+                    option = 'EQ'
+                    low    = <fs_ztcopa0012>-val ) TO r_setname.
+
+    SELECT * FROM setleaf INTO TABLE t_setleaf
+                               WHERE setclass EQ '0000'
+                                 AND setname  IN r_setname.
+    IF sy-subrc EQ 0.
+
+      LOOP AT t_setleaf ASSIGNING FIELD-SYMBOL(<fs_setleaf>).
+        APPEND INITIAL LINE TO p_range
+        ASSIGNING FIELD-SYMBOL(<fs_ccusto>).
+        <fs_ccusto>-sign   = <fs_setleaf>-valsign.
+        <fs_ccusto>-option = <fs_setleaf>-valoption.
+        <fs_ccusto>-low    = <fs_setleaf>-valfrom.
+        <fs_ccusto>-high   = <fs_setleaf>-valto.
+      ENDLOOP.
+
+    ELSE.
+*- Cadastros incompletos na tab.SETLEAF
+    ENDIF.
+
+  ELSE.
+*- Sem dados no botão de Parâmetros
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  MOUNT_BW_MIRROR
+*&---------------------------------------------------------------------*
+FORM mount_bw_mirror.
+
+  DATA: wa_base           TYPE ztcopa0013,   "Work area da tab. base BW
+        wa_sum_ccenter    TYPE ztcopa0013,      "CARDOG17+++ DEFECT #11
+*        wa_sum_mod_agr    TYPE ztcopa0013,     "CARDOG17--- DEFECT #11
+        wa_base_sorted    TYPE ty_base_bw_sorted,
+        r_garantia        TYPE ty_range,
+        r_instalacao      TYPE ty_range,
+        lt_base_bw_sorted TYPE TABLE OF ty_base_bw_sorted,
+        lv_perflag        LIKE tkel-perflag VALUE '1'.
+
+*- Filtros:
+*- de centro de custo
+  PERFORM: select_setleaf USING 'EXCLUI_CC'
+                       CHANGING r_ccusto,
+*- contas relevantes para sumarização de garantia
+           select_setleaf USING 'SUM_GARANTIA'
+                       CHANGING r_garantia,
+*- contas relevantes para sumarização de instalação
+           select_setleaf USING 'SUM_INSTALACAO'
+                       CHANGING r_instalacao.
+
+  IF NOT r_ccusto[] IS INITIAL.
+    DELETE t_base_bw WHERE costcenter IN r_ccusto.
+  ENDIF.
+
+*- Varre os dados de BW - montagem dos primeiros níveis de sumarização
+*  SORT t_base_bw BY /bic/cgmod_agr             "CARDOG17--- DEFECT #11
+*                    costcenter                 "CARDOG17--- DEFECT #11
+  SORT t_base_bw BY costcenter                  "CARDOG17+++ DEFECT #11
+                    /bic/cgmod_agr              "CARDOG17+++ DEFECT #11
+                    gl_account.
+
+  LOOP AT t_base_bw INTO DATA(wa_base_sort).
+    MOVE-CORRESPONDING wa_base_sort TO wa_base_sorted.
+    APPEND wa_base_sorted TO lt_base_bw_sorted.
+  ENDLOOP.
+
+  LOOP AT lt_base_bw_sorted ASSIGNING FIELD-SYMBOL(<fs_base_bw>).
+
+*    AT NEW /bic/cgmod_agr.                     "CARDOG17--- DEFECT #11
+*      CLEAR wa_sum_mod_agr.                    "CARDOG17--- DEFECT #11
+    AT NEW costcenter.                          "CARDOG17+++ DEFECT #11
+      CLEAR wa_sum_ccenter.                     "CARDOG17+++ DEFECT #11
+    ENDAT.
+
+    CLEAR wa_base.
+
+*- Dados básicos
+    wa_base-mandt  = sy-mandt.
+    wa_base-bukrs  = '100'.
+    wa_base-perio  = <fs_base_bw>-calmonth(4) && '0' &&
+                     <fs_base_bw>-calmonth+4(2).
+    wa_base-saknr  = <fs_base_bw>-gl_account.
+    wa_base-kostl  = <fs_base_bw>-costcenter.
+    wa_base-artnr  = <fs_base_bw>-material.
+    wa_base-zz0040 = <fs_base_bw>-/bic/cgmod_agr.
+    wa_base-vbeln  = <fs_base_bw>-/bic/cgcrmdcos.
+    wa_base-belnr  = <fs_base_bw>-/bic/cgcrmdors.
+    wa_base-lvl    = '0'.
+
+    CALL FUNCTION 'RKE_GET_LAST_DAY_IN_PERIOD'
+      EXPORTING
+        perflag = lv_perflag
+        perio   = wa_base-perio
+        periv   = 'K4'
+      IMPORTING
+        date    = wa_base-budat.
+
+*- Verifica regra de rateio
+    READ TABLE t_ztcopa0014 TRANSPORTING proce
+                               INTO DATA(ls_proce)
+                                WITH KEY bukrs = '100' "<fs_base_bw>-compcode.
+                                         conto = <fs_base_bw>-gl_account.
+
+    IF sy-subrc NE 0. "Não definido >> verificar base
+*      CLEAR: ls_proce, wa_sum_mod_agr-vv007,            "CARDOG17--- DEFECT #11
+*                       wa_sum_mod_agr-vv049.            "CARDOG17--- DEFECT #11
+      CLEAR: ls_proce, wa_sum_ccenter-vv007,             "CARDOG17+++ DEFECT #11
+                       wa_sum_ccenter-vv049.             "CARDOG17+++ DEFECT #11
+    ELSE.
+*- Sumarização por conta
+      CASE ls_proce-proce.
+        WHEN '1'. "Garantia
+          MOVE <fs_base_bw>-amount TO  wa_base-vv007.
+          IF <fs_base_bw>-gl_account IN r_garantia.
+*            ADD <fs_base_bw>-amount TO: wa_sum_mod_agr-vv007.  "CARDOG17--- DEFECT #11
+            ADD <fs_base_bw>-amount TO: wa_sum_ccenter-vv007.   "CARDOG17+++ DEFECT #11
+          ENDIF.
+
+        WHEN '2'. "Instalação
+          MOVE <fs_base_bw>-amount TO  wa_base-vv049.
+          IF <fs_base_bw>-gl_account IN r_instalacao.
+*            ADD <fs_base_bw>-amount TO: wa_sum_mod_agr-vv049.  "CARDOG17--- DEFECT #11
+            ADD <fs_base_bw>-amount TO: wa_sum_ccenter-vv049.   "CARDOG17+++ DEFECT #11
+          ENDIF.
+
+      ENDCASE.
+    ENDIF.
+
+*- Registro nível 0
+    APPEND wa_base TO t_ztcopa0013.
+
+*    AT END OF /bic/cgmod_agr.                          "CARDOG17--- DEFECT #11
+    AT END OF costcenter.                               "CARDOG17+++ DEFECT #11
+      CLEAR: wa_base-saknr,
+             wa_base-vbeln,
+             wa_base-belnr,
+             wa_base-budat,
+             wa_base-artnr.
+
+      wa_base-lvl   = '2'.
+*      IF NOT wa_sum_mod_agr-vv007 IS INITIAL.          "CARDOG17--- DEFECT #11
+      IF NOT wa_sum_ccenter-vv007 IS INITIAL.           "CARDOG17+++ DEFECT #11
+        CLEAR wa_base-vv049.
+*        wa_base-vv007 = wa_sum_mod_agr-vv007.          "CARDOG17--- DEFECT #11
+        wa_base-vv007 = wa_sum_ccenter-vv007.           "CARDOG17+++ DEFECT #11
+        wa_base-proce = '1'.
+*- Registro nível 2
+        APPEND wa_base TO t_ztcopa0013.
+      ENDIF.
+
+*      IF NOT wa_sum_mod_agr-vv049 IS INITIAL.          "CARDOG17--- DEFECT #11
+      IF NOT wa_sum_ccenter-vv049 IS INITIAL.           "CARDOG17+++ DEFECT #11
+        CLEAR wa_base-vv007.
+*        wa_base-vv049 = wa_sum_mod_agr-vv049.          "CARDOG17--- DEFECT #11
+        wa_base-vv049 = wa_sum_ccenter-vv049.           "CARDOG17+++ DEFECT #11
+        wa_base-proce = '2'.
+*- Registro nível 2
+        APPEND wa_base TO t_ztcopa0013.
+      ENDIF.
+
+    ENDAT.
+
+  ENDLOOP.
+
+*- Sumarização por GARANTIA
+*- Filtro
+  SORT t_base_bw BY gl_account
+                    costcenter
+                    /bic/cgmod_agr.
+
+  PERFORM: calc_totals    USING r_garantia
+                                t_base_bw              "antes era T_BASE_BW_SORTED
+                                '1'
+                       CHANGING t_sumcc_garantia
+                                t_sumconta_garantia,
+           calc_percent   USING r_garantia
+                                t_sumcc_garantia       "PCT p/ CC
+                                t_sumconta_garantia    "PCT p/ Conta
+                                '1'
+                                '0'                    "Percentual normal
+                       CHANGING t_ztcopa0013,
+           calc_percent   USING r_garantia
+                                t_sumcc_garantia       "PCT p/ CC
+                                t_sumconta_garantia
+                                '1'
+                                '2'                    "Percentual p/agrupamento
+                       CHANGING t_ztcopa0013,
+
+*- Sumarização por INSTALAÇÃO
+*- Filtro
+           calc_totals    USING r_instalacao
+                                t_base_bw             "antes era T_BASE_BW_SORTED
+                                '2'
+                       CHANGING t_sumcc_instalacao
+                                t_sumconta_instalacao,
+           calc_percent   USING r_instalacao
+                                t_sumcc_instalacao     "PCT p/ CC
+                                t_sumconta_instalacao  "PCT p/ Conta
+                                '2'
+                                '0'                    "Percentual normal
+                       CHANGING t_ztcopa0013,
+           calc_percent   USING r_instalacao
+                                t_sumcc_instalacao     "PCT p/ CC
+                                t_sumconta_instalacao
+                                '2'
+                                '2'                    "Percentual p/agrupamento
+                       CHANGING t_ztcopa0013.
+*- Status disponíveis
+*A   Ativo
+*X   Estornado
+*I   Inativo
+*N   Não considerado
+
+
+  IF p_check EQ abap_false.
+    INSERT ztcopa0013 FROM TABLE t_ztcopa0013.
+    IF sy-subrc EQ 0.
+      DATA(lv_msg)  = 'Dados para o período '.
+      DATA(lv_msg1) = p_perio+5(2) && '.' && p_perio(4) && ' gravados com sucesso.'.
+      MESSAGE i000(z_bc) WITH lv_msg lv_msg1.
+      COMMIT WORK.
+    ENDIF.
+  ELSE.
+    BREAK-POINT.
+  ENDIF.
+
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  CALC_TOTALS
+*&---------------------------------------------------------------------*
+FORM calc_totals USING p_range      TYPE ty_range
+                       pt_base      TYPE tt_base_bw "tt_base_bw_sorted
+                       p_proce      TYPE char1
+              CHANGING pt_sum_cc    TYPE tt_ztcopa0013
+                       pt_sum_conta TYPE tt_ztcopa0013.
+
+  DATA wa_base TYPE ztcopa0013.
+
+  LOOP AT pt_base ASSIGNING FIELD-SYMBOL(<fs_base_bw>).
+
+    CASE p_proce.
+      WHEN '1'.
+        wa_base-vv007  = <fs_base_bw>-amount.
+      WHEN '2'.
+        wa_base-vv049  = <fs_base_bw>-amount.
+    ENDCASE.
+
+*- Totais p/ conta
+    wa_base-kostl  = <fs_base_bw>-costcenter.
+    wa_base-saknr  = <fs_base_bw>-gl_account.
+    COLLECT wa_base INTO pt_sum_conta.
+
+*- Totais p/ centro de custo
+    IF <fs_base_bw>-gl_account IN p_range.
+      CLEAR: wa_base-zz0040,
+             wa_base-saknr.
+      COLLECT wa_base INTO pt_sum_cc.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  CALC_PERCENT
+*&---------------------------------------------------------------------*
+FORM calc_percent USING p_range       TYPE ty_range
+                        pt_sumcc      TYPE tt_ztcopa0013
+                        pt_sumconta   TYPE tt_ztcopa0013
+                        p_proce       TYPE char1
+                        p_level       TYPE char1
+               CHANGING pt_ztcopa0013 TYPE tt_ztcopa0013.
+
+  LOOP AT pt_ztcopa0013 ASSIGNING FIELD-SYMBOL(<fs_ztcopa0013>)
+                                         WHERE perc IS INITIAL
+                                           AND lvl  EQ p_level.
+
+    CASE p_level.
+      WHEN '0'.
+        READ TABLE pt_sumconta WITH KEY saknr = <fs_ztcopa0013>-saknr
+                                        kostl = <fs_ztcopa0013>-kostl
+                              INTO DATA(wa_sum).
+      WHEN '2'.
+        CHECK <fs_ztcopa0013>-saknr IN p_range
+           OR <fs_ztcopa0013>-saknr IS INITIAL.
+        READ TABLE pt_sumcc WITH KEY kostl = <fs_ztcopa0013>-kostl
+                                INTO wa_sum.
+*      WHEN '1'.
+*        READ TABLE pt_sum WITH KEY saknr = <fs_ztcopa0013>-saknr
+*                                 INTO wa_sum.
+    ENDCASE.
+
+    IF sy-subrc EQ 0.
+      CASE p_proce.
+        WHEN '1'.
+          IF NOT <fs_ztcopa0013>-vv007 IS INITIAL.
+            <fs_ztcopa0013>-perc = <fs_ztcopa0013>-vv007 * 100 / wa_sum-vv007.
+          ELSE.
+            CLEAR <fs_ztcopa0013>-perc.
+          ENDIF.
+        WHEN '2'.
+          IF NOT <fs_ztcopa0013>-vv049 IS INITIAL.
+            <fs_ztcopa0013>-perc = <fs_ztcopa0013>-vv049 * 100 / wa_sum-vv049.
+          ELSE.
+            CLEAR <fs_ztcopa0013>-perc.
+          ENDIF.
+      ENDCASE.
+    ENDIF.
+
+  ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  PROCESS_DATA
+*&---------------------------------------------------------------------*
+FORM process_data.
+
+  DATA: r_garvar      TYPE ty_range,
+        t_sum_cosp_cc TYPE tt_sum_cosp_cc,
+        t_cosp        TYPE tt_cosp,
+        lv_msg        TYPE string,
+        lv_msg1       TYPE string,
+        lv_msg2       TYPE string.
+
+*- Validação da base de rateio
+  PERFORM: db_check,
+
+* Validação para contas contábeis e regras de rateio
+           select_setleaf USING 'GARANTIA_VAR'
+                       CHANGING r_garvar.
+
+*- Caso seja reprocessamento de estornado não necessita nova extração
+  READ TABLE t_cust WITH KEY reproc = abap_true TRANSPORTING NO FIELDS.
+  IF sy-subrc NE 0.
+*- Como a busca por range retorna sucesso encontrando pelo menos 1 ocorrência
+*- obrigou a pesquisar registro por registro do range nas regras
+    LOOP AT r_garvar ASSIGNING FIELD-SYMBOL(<fs_garvar>).
+
+      LOOP AT t_ztcopa0014 TRANSPORTING NO FIELDS
+        WHERE conto EQ <fs_garvar>-low.
+      ENDLOOP.
+
+      IF sy-subrc NE 0.
+        lv_msg  = 'Não existe regra de rateio definida para a conta '.
+        lv_msg1 = <fs_garvar>-low.
+        MESSAGE e000(z_bc) WITH lv_msg lv_msg1.
+      ENDIF.
+
+    ENDLOOP.
+
+*- Seleção nas tabelas COSP
+    PERFORM: recupera_cosp CHANGING t_sum_cosp_cc
+                                    t_cosp,
+             saldo_cosp_bw    USING t_sum_cosp_cc
+                                    t_cosp,
+             pct_cosp_bw      USING t_saldo_cosp_bw
+                                    t_cosp
+                           CHANGING t_ztcopa0013_cosp
+                                    t_ztcopa0013_regra.
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  DB_CHECK
+*&---------------------------------------------------------------------*
+FORM db_check.
+
+  DATA lv_ans TYPE char1.
+
+*- Verifica base de BW
+  SELECT * FROM ztcopa0013 INTO TABLE t_ztcopa0013
+          WHERE perio EQ p_perio
+            AND bukrs IN s_bukrs
+            AND artnr IN s_artnr.
+
+  IF sy-subrc NE 0.
+    IF p_rateio IS INITIAL.
+      DATA(lv_msg)  = 'Não existe base de rateio montada para o período '.
+      DATA(lv_msg1) = p_perio+5(2) && '.' && p_perio(4) && ' e Empresa/Artigos'.
+      DATA(lv_msg2) = 'selecionados'.
+      MESSAGE e000(z_bc) WITH lv_msg lv_msg1 lv_msg2.
+    ENDIF.
+  ELSE.
+    IF NOT p_rateio IS INITIAL.
+*- Já existe base de BW, confirmar exclusão
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = 'Confirmar processamento'
+          text_question         = 'Já existem dados na memória pra esses parâmetros! Removê-los?'
+          text_button_1         = 'Prosseguir'
+          icon_button_1         = 'ICON_CHANGE'
+          text_button_2         = 'Cancelar'
+          icon_button_2         = 'ICON_BREAKPOINT'
+          display_cancel_button = ' '
+          popup_type            = 'ICON_MESSAGE_WARNING'
+        IMPORTING
+          answer                = lv_ans.
+
+      IF lv_ans = 2.
+        LEAVE PROGRAM.
+      ELSE.
+        DELETE FROM ztcopa0013
+                    WHERE perio EQ p_perio.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+  IF NOT t_cust[] IS INITIAL AND
+     NOT p_exec   IS INITIAL AND
+         p_check  IS INITIAL.
+
+*- Identificador de reprocessamento de estornados
+    LOOP AT t_cust ASSIGNING FIELD-SYMBOL(<fs_ztcopa0002>)
+                       WHERE stats EQ 'I'.
+      <fs_ztcopa0002>-stats  = 'A'.
+      <fs_ztcopa0002>-reproc = abap_true.
+
+      IF <fs_ztcopa0002>-vv007 LT 0.
+        MULTIPLY <fs_ztcopa0002>-vv007 BY -1.
+      ENDIF.
+      IF <fs_ztcopa0002>-vv049 LT 0.
+        MULTIPLY <fs_ztcopa0002>-vv049 BY -1.
+      ENDIF.
+
+    ENDLOOP.
+
+    IF sy-subrc NE 0.
+      lv_msg  = 'Já existe execução para o período '.
+      lv_msg1 = p_perio+5(2) && '.' && p_perio(4) && ' favor executar '.
+      lv_msg2 = 'o estorno'.
+      MESSAGE e000(z_bc) WITH lv_msg lv_msg1 lv_msg2.
+*    ELSE.
+*      DELETE t_cust WHERE stats NE 'A'.
+    ENDIF.
+
+    IF lv_ans = 99.
+*      LEAVE PROGRAM.
+*    ELSE.
+      DELETE FROM ztcopa0002
+            WHERE erkrs EQ p_erkrs
+              AND perio EQ p_perio.
+      COMMIT WORK.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  RECUPERA_COSP
+*&---------------------------------------------------------------------*
+FORM recupera_cosp CHANGING pt_sum_cosp TYPE tt_sum_cosp_cc
+                            pt_cosp     TYPE tt_cosp.
+
+  DATA: r_empgar   TYPE ty_range,
+        lt_cospsum TYPE tt_cosp,
+        lv_rate    TYPE tcurr-ukurs,
+        lv_perflag LIKE tkel-perflag VALUE '1',
+        lv_date    LIKE sy-datum.
+
+  PERFORM select_setleaf USING 'EMP_GARANTIA'
+                      CHANGING r_empgar.
+
+  CLEAR pt_sum_cosp[].
+  SELECT cosp~objnr,  cosp~kstar,  cosp~bukrs,  cosp~twaer,
+         cosp~wtg001, cosp~wtg002, cosp~wtg003, cosp~wtg004,
+         cosp~wtg005, cosp~wtg006, cosp~wtg007, cosp~wtg008,
+         cosp~wtg009, cosp~wtg010, cosp~wtg011, cosp~wtg012,
+         ztcopa0014~proce
+         FROM cosp INNER JOIN ztcopa0014
+                           ON ( ztcopa0014~conto EQ cosp~kstar
+                          AND   ztcopa0014~bukrs EQ cosp~bukrs )
+                   INTO TABLE @pt_cosp
+           FOR ALL ENTRIES IN @t_ztcopa0014
+                        WHERE   cosp~lednr EQ '00'
+                          AND   cosp~gjahr EQ @p_perio(4)
+                          AND   cosp~wrttp EQ '04'
+                          AND   cosp~kstar EQ @t_ztcopa0014-conto
+                          AND ( cosp~bukrs EQ @t_ztcopa0014-bukrs
+                           OR   cosp~bukrs IN @r_empgar ).
+
+  IF sy-subrc EQ 0.
+*- Remoção dos centros de custos do parâmetro EXCLUI_CC
+    IF NOT r_ccusto[] IS INITIAL.
+      DELETE pt_cosp WHERE objnr(2)   NE 'KS'
+                       AND objnr+6(7) IN r_ccusto.
+    ELSE.
+      DELETE pt_cosp WHERE objnr(2) NE 'KS'.
+    ENDIF.
+
+*- Sumariza COSP pra eliminar duplicidades
+    CLEAR lt_cospsum[].
+    LOOP AT pt_cosp ASSIGNING FIELD-SYMBOL(<fs_cosp>).
+      COLLECT <fs_cosp> INTO lt_cospsum.
+    ENDLOOP.
+    pt_cosp[] = lt_cospsum.
+
+*- Conversão de moedas
+    CALL FUNCTION 'RKE_GET_LAST_DAY_IN_PERIOD'
+      EXPORTING
+        perflag = lv_perflag
+        perio   = p_perio
+        periv   = 'K4'
+      IMPORTING
+        date    = lv_date.
+
+    LOOP AT pt_cosp ASSIGNING <fs_cosp>.
+      CHECK <fs_cosp>-twaer NE 'BRL'.
+      CALL FUNCTION 'READ_EXCHANGE_RATE'
+        EXPORTING
+          client           = sy-mandt
+          date             = lv_date
+          foreign_currency = <fs_cosp>-twaer
+          local_currency   = 'BRL'
+          type_of_rate     = 'M'
+        IMPORTING
+          exchange_rate    = lv_rate
+        EXCEPTIONS
+          no_rate_found    = 1
+          no_factors_found = 2
+          no_spread_found  = 3
+          derived_2_times  = 4
+          overflow         = 5
+          zero_rate        = 6
+          OTHERS           = 7.
+
+      IF sy-subrc EQ 0.
+        MULTIPLY: <fs_cosp>-wtg001 BY lv_rate,
+                  <fs_cosp>-wtg002 BY lv_rate,
+                  <fs_cosp>-wtg003 BY lv_rate,
+                  <fs_cosp>-wtg004 BY lv_rate,
+                  <fs_cosp>-wtg005 BY lv_rate,
+                  <fs_cosp>-wtg006 BY lv_rate,
+                  <fs_cosp>-wtg007 BY lv_rate,
+                  <fs_cosp>-wtg008 BY lv_rate,
+                  <fs_cosp>-wtg009 BY lv_rate,
+                  <fs_cosp>-wtg010 BY lv_rate,
+                  <fs_cosp>-wtg011 BY lv_rate,
+                  <fs_cosp>-wtg012 BY lv_rate.
+      ENDIF.
+    ENDLOOP.
+
+*- Sumarização dos dados da COSP
+    DATA(lv_campo) = 'WTG0' && p_perio+5(2).
+
+    SORT pt_cosp BY bukrs kstar objnr+6(7).
+    LOOP AT pt_cosp ASSIGNING <fs_cosp>.
+
+*- Recuperando campo referente ao mês solicitado
+      ASSIGN COMPONENT lv_campo OF STRUCTURE <fs_cosp>
+                             TO FIELD-SYMBOL(<fs_amount>).
+
+      APPEND VALUE #( bukrs  = <fs_cosp>-bukrs
+                      kstar  = <fs_cosp>-kstar
+                      objnr  = <fs_cosp>-objnr+6(7)
+                      wtgxxx = <fs_amount>
+                      proce  = <fs_cosp>-proce ) TO pt_sum_cosp.
+
+    ENDLOOP.
+
+*- Sumarização por empresa, conta e centro de custo
+    SORT pt_sum_cosp.
+*- Total p/ Centro de custo
+    DATA(lt_sum_cosp_cc) = VALUE tt_sum_cosp_cc(
+                      FOR GROUPS <fs_key> OF <fs_cosp_sum> IN pt_sum_cosp
+                        GROUP BY ( bukrs   = <fs_cosp_sum>-bukrs
+                                   kstar   = <fs_cosp_sum>-kstar
+                                   objnr   = <fs_cosp_sum>-objnr )
+                             LET coll_line = REDUCE ty_sum_cosp_cc(
+                            INIT line TYPE ty_sum_cosp_cc
+                             FOR <fs_cosp_sum_final>
+                        IN GROUP <fs_key>
+                            NEXT line-bukrs  = <fs_cosp_sum_final>-bukrs
+                                 line-kstar  = <fs_cosp_sum_final>-kstar
+                                 line-objnr  = <fs_cosp_sum_final>-objnr
+                                 line-proce  = <fs_cosp_sum_final>-proce
+                                 line-wtgxxx = line-wtgxxx + <fs_cosp_sum_final>-wtgxxx )
+                              IN ( coll_line ) ).
+
+*- Total p/ Conta
+    DATA(lt_sum_cosp_conta) = VALUE tt_sum_cosp_conta(
+                         FOR GROUPS <fs_key2> OF <fs_cosp_sum> IN pt_sum_cosp
+                           GROUP BY ( bukrs    = <fs_cosp_sum>-bukrs
+                                      kstar    = <fs_cosp_sum>-kstar )
+                                LET coll2_line = REDUCE ty_sum_cosp_conta(
+                               INIT line2 TYPE ty_sum_cosp_conta
+                                FOR <fs_cosp_sum_final>
+                           IN GROUP <fs_key2>
+                               NEXT line2-bukrs  = <fs_cosp_sum_final>-bukrs
+                                    line2-kstar  = <fs_cosp_sum_final>-kstar
+                                    line2-wtgxxx = line2-wtgxxx + <fs_cosp_sum_final>-wtgxxx )
+                                 IN ( coll2_line ) ).
+
+*- Total p/ Empresa
+    DATA(lt_sum_cosp_empr) = VALUE tt_sum_cosp_empr(
+                        FOR GROUPS <fs_key3> OF <fs_cosp_sum> IN pt_sum_cosp
+                          GROUP BY ( bukrs    = <fs_cosp_sum>-bukrs )
+                               LET coll3_line = REDUCE ty_sum_cosp_empr(
+                              INIT line3 TYPE ty_sum_cosp_empr
+                               FOR <fs_cosp_sum_final>
+                          IN GROUP <fs_key3>
+                              NEXT line3-bukrs  = <fs_cosp_sum_final>-bukrs
+                                   line3-wtgxxx = line3-wtgxxx + <fs_cosp_sum_final>-wtgxxx )
+                                IN ( coll3_line ) ).
+  ENDIF. "SELECT * FROM cosp...
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  SALDO_COSP_BW
+*&---------------------------------------------------------------------*
+FORM saldo_cosp_bw USING pt_sum_cosp_cc TYPE tt_sum_cosp_cc
+                         pt_cosp        TYPE tt_cosp.
+
+  DATA: lt_ztcopa0013_sum TYPE SORTED TABLE OF ty_ztcopa0013
+                          WITH NON-UNIQUE KEY perio bukrs saknr
+                                              kostl zz0040,
+        wa_saldo_cosp_bw  TYPE ty_saldo_cosp_bw.
+
+*- Recuperando base de rateio sumarizado por conta nível 0
+*  lt_ztcopa0013[] = t_ztcopa0013[].
+  SELECT bukrs, saknr, kostl,
+         SUM( vv007 ) AS vv007, SUM( vv049 ) AS vv049, SUM( perc ) AS perc
+         FROM ztcopa0013
+         INTO CORRESPONDING FIELDS OF TABLE @lt_ztcopa0013_sum
+         WHERE perio EQ @p_perio
+           AND artnr IN @s_artnr
+           AND lvl   EQ '0'
+         GROUP BY bukrs, saknr, kostl.
+
+  IF sy-subrc EQ 0.
+    LOOP AT pt_cosp ASSIGNING FIELD-SYMBOL(<fs_cosp>).
+      CLEAR wa_saldo_cosp_bw.
+      READ TABLE lt_ztcopa0013_sum ASSIGNING FIELD-SYMBOL(<fs_ztcopa0013_sum>)
+                                      WITH KEY bukrs = <fs_cosp>-bukrs
+                                               saknr = <fs_cosp>-kstar
+                                               kostl = <fs_cosp>-objnr+6(7).
+      IF sy-subrc EQ 0.
+        wa_saldo_cosp_bw-bukrs = <fs_ztcopa0013_sum>-bukrs.
+        wa_saldo_cosp_bw-saknr = <fs_ztcopa0013_sum>-saknr.
+        wa_saldo_cosp_bw-kostl = <fs_ztcopa0013_sum>-kostl.
+        wa_saldo_cosp_bw-proce = <fs_cosp>-proce.
+*- Recuperando campo referente ao mês solicitado
+        DATA(lv_campo) = 'WTG0' && p_perio+5(2).
+        ASSIGN COMPONENT lv_campo OF STRUCTURE <fs_cosp>
+                       TO FIELD-SYMBOL(<fs_amount>).
+
+        CASE <fs_cosp>-proce.
+          WHEN '1'.
+            wa_saldo_cosp_bw-vv007 = <fs_amount> - <fs_ztcopa0013_sum>-vv007.
+          WHEN '2'.
+            wa_saldo_cosp_bw-vv049 = <fs_amount> - <fs_ztcopa0013_sum>-vv049.
+        ENDCASE.
+        APPEND wa_saldo_cosp_bw TO t_saldo_cosp_bw.
+*- Com correspondência
+        <fs_cosp>-match           = abap_true.
+        <fs_ztcopa0013_sum>-match = abap_true.
+      ENDIF.
+    ENDLOOP.
+
+*- Sem correspondência
+    LOOP AT pt_cosp ASSIGNING <fs_cosp>
+                        WHERE match IS INITIAL.
+      CLEAR wa_saldo_cosp_bw.
+      wa_saldo_cosp_bw-bukrs = <fs_cosp>-bukrs.
+      wa_saldo_cosp_bw-saknr = <fs_cosp>-kstar.
+      wa_saldo_cosp_bw-kostl = <fs_cosp>-objnr+6(7).
+      wa_saldo_cosp_bw-proce = <fs_cosp>-proce.
+      lv_campo = 'WTG0' && p_perio+5(2).
+      ASSIGN COMPONENT lv_campo OF STRUCTURE <fs_cosp>
+                    TO <fs_amount>.
+
+      CASE <fs_cosp>-proce.
+        WHEN '1'.
+          wa_saldo_cosp_bw-vv007 = <fs_amount>.
+        WHEN '2'.
+          wa_saldo_cosp_bw-vv049 = <fs_amount>.
+      ENDCASE.
+      APPEND wa_saldo_cosp_bw TO t_saldo_cosp_bw.
+    ENDLOOP.
+
+    LOOP AT lt_ztcopa0013_sum ASSIGNING <fs_ztcopa0013_sum>
+                                  WHERE match IS INITIAL.
+      wa_saldo_cosp_bw-bukrs = <fs_ztcopa0013_sum>-bukrs.
+      wa_saldo_cosp_bw-saknr = <fs_ztcopa0013_sum>-saknr.
+      wa_saldo_cosp_bw-kostl = <fs_ztcopa0013_sum>-kostl.
+      wa_saldo_cosp_bw-vv007 = <fs_ztcopa0013_sum>-vv007.
+      wa_saldo_cosp_bw-vv049 = <fs_ztcopa0013_sum>-vv049.
+      APPEND wa_saldo_cosp_bw TO t_saldo_cosp_bw.
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  PCT_COSP_BW
+*&---------------------------------------------------------------------*
+FORM pct_cosp_bw USING pt_saldo_cosp_bw   TYPE tt_saldo_cosp_bw
+                       pt_cosp            TYPE tt_cosp
+              CHANGING pt_ztcopa0013_cosp TYPE tt_ztcopa0013_cosp
+                       pt_ztcopa0013      TYPE tt_ztcopa0013_reg.
+
+  DATA wa_ztcopa0013_cosp TYPE ty_ztcopa0013_cosp.
+
+*- Recuperacão dos dados do espelho do BW
+  SELECT ztcopa0013~mandt  ztcopa0013~perio ztcopa0013~bukrs
+         ztcopa0013~saknr  ztcopa0013~kostl ztcopa0013~artnr
+         ztcopa0013~zz0040 ztcopa0013~budat ztcopa0013~vbeln
+         ztcopa0013~belnr  ztcopa0013~proce ztcopa0013~vv007
+         ztcopa0013~vv049  ztcopa0013~perc  ztcopa0013~lvl
+               FROM ztcopa0013
+         INTO TABLE pt_ztcopa0013
+         FOR ALL ENTRIES IN pt_saldo_cosp_bw
+         WHERE   ztcopa0013~perio EQ p_perio
+           AND ( ztcopa0013~saknr EQ pt_saldo_cosp_bw-saknr
+            OR   ztcopa0013~saknr EQ space )
+           AND   ztcopa0013~kostl EQ pt_saldo_cosp_bw-kostl
+           AND   ztcopa0013~artnr IN s_artnr.
+
+  IF sy-subrc EQ 0.
+*- De/Para
+    SELECT ztcopa0015~ccorig, ztcopa0015~ccdest, csks~bukrs
+      FROM ztcopa0015 INNER JOIN csks
+                              ON ( csks~kokrs EQ '1000'
+                             AND   csks~kostl EQ ztcopa0015~ccorig )
+                INTO TABLE @DATA(lt_ztcopa0015)
+                           WHERE csks~datbi GE @sy-datum.
+
+    LOOP AT pt_saldo_cosp_bw ASSIGNING FIELD-SYMBOL(<fs_saldo_cosp_bw>).
+
+      MOVE-CORRESPONDING <fs_saldo_cosp_bw> TO wa_ztcopa0013_cosp.
+*- Registra saldo - contas com origem no BW
+      LOOP AT pt_ztcopa0013 ASSIGNING FIELD-SYMBOL(<fs_ztcopa0013>)
+                                             WHERE bukrs EQ <fs_saldo_cosp_bw>-bukrs
+                                               AND saknr EQ <fs_saldo_cosp_bw>-saknr
+                                               AND kostl EQ <fs_saldo_cosp_bw>-kostl
+                                               AND lvl   EQ '0'.
+
+        CLEAR: wa_ztcopa0013_cosp-vv007,
+               wa_ztcopa0013_cosp-vv049.
+
+        IF <fs_saldo_cosp_bw>-proce EQ '1'.
+          wa_ztcopa0013_cosp-vv007 = <fs_saldo_cosp_bw>-vv007 *
+                                     <fs_ztcopa0013>-perc / 100.
+        ELSE.
+          wa_ztcopa0013_cosp-vv049 = <fs_saldo_cosp_bw>-vv049 *
+                                     <fs_ztcopa0013>-perc / 100.
+        ENDIF.
+
+        wa_ztcopa0013_cosp-marca  = abap_true. "confirmar se isso é dif.rateio
+        wa_ztcopa0013_cosp-perio  = <fs_ztcopa0013>-perio.
+        wa_ztcopa0013_cosp-bukrs  = <fs_ztcopa0013>-bukrs.
+        wa_ztcopa0013_cosp-artnr  = <fs_ztcopa0013>-artnr.
+        wa_ztcopa0013_cosp-zz0040 = <fs_ztcopa0013>-zz0040.
+        wa_ztcopa0013_cosp-vbeln  = <fs_ztcopa0013>-vbeln.
+        wa_ztcopa0013_cosp-belnr  = <fs_ztcopa0013>-belnr.
+        APPEND wa_ztcopa0013_cosp TO pt_ztcopa0013_cosp.
+
+      ENDLOOP.
+*- Efetua cálculo - contas com origem na COSP (Contábil)
+      IF sy-subrc NE 0.
+*- BW atualmente só suporta empresa 100, por isso aqui efetuamos a conversão
+*- para outras empresas para achar os dados equivalentes na extração BW
+        IF <fs_saldo_cosp_bw>-bukrs NE '100'.
+          READ TABLE lt_ztcopa0015 WITH KEY ccorig = <fs_saldo_cosp_bw>-kostl
+                                            bukrs  = <fs_saldo_cosp_bw>-bukrs
+                            ASSIGNING FIELD-SYMBOL(<fs_ztcopa0015>).
+
+          IF sy-subrc NE 0.
+            DATA(lv_msg)  = 'Centro de custo ' && <fs_ztcopa0013>-kostl.
+            DATA(lv_msg1) = ' da empresa '     && <fs_ztcopa0013>-bukrs.
+            DATA(lv_msg2) = ' não está cadastrado na tabela de De/para'.
+            MESSAGE e000(z_bc) WITH lv_msg lv_msg1 lv_msg2.
+          ELSE.
+            DATA(vl_bukrs) = '100'.
+            DATA(vl_kostl) = <fs_ztcopa0015>-ccdest.
+          ENDIF.
+        ELSE.
+          vl_bukrs = <fs_saldo_cosp_bw>-bukrs.
+          vl_kostl = <fs_saldo_cosp_bw>-kostl.
+        ENDIF.
+
+        LOOP AT pt_ztcopa0013 ASSIGNING <fs_ztcopa0013>
+                                               WHERE bukrs EQ vl_bukrs
+                                                 AND kostl EQ vl_kostl
+                                                 AND lvl   EQ '2'.
+          CLEAR: wa_ztcopa0013_cosp-vv007,
+                wa_ztcopa0013_cosp-vv049.
+
+          CHECK <fs_ztcopa0013>-proce = <fs_saldo_cosp_bw>-proce.
+
+          IF <fs_saldo_cosp_bw>-proce EQ '1'.
+            wa_ztcopa0013_cosp-vv007 = <fs_saldo_cosp_bw>-vv007 *
+                                       <fs_ztcopa0013>-perc / 100.
+          ELSE.
+            wa_ztcopa0013_cosp-vv049 = <fs_saldo_cosp_bw>-vv049 *
+                                       <fs_ztcopa0013>-perc / 100.
+          ENDIF.
+
+          wa_ztcopa0013_cosp-marca  = abap_true.
+          wa_ztcopa0013_cosp-perio  = <fs_ztcopa0013>-perio.
+          wa_ztcopa0013_cosp-bukrs  = <fs_saldo_cosp_bw>-bukrs.
+          wa_ztcopa0013_cosp-kostl  = <fs_saldo_cosp_bw>-kostl.
+          wa_ztcopa0013_cosp-artnr  = <fs_ztcopa0013>-artnr.
+          wa_ztcopa0013_cosp-zz0040 = <fs_ztcopa0013>-zz0040.
+          wa_ztcopa0013_cosp-vbeln  = <fs_ztcopa0013>-vbeln.
+          wa_ztcopa0013_cosp-belnr  = <fs_ztcopa0013>-belnr.
+          APPEND wa_ztcopa0013_cosp TO pt_ztcopa0013_cosp.
+
+        ENDLOOP.
+
+        IF sy-subrc NE 0.
+          wa_ztcopa0013_cosp-marca  = abap_true.
+          APPEND wa_ztcopa0013_cosp TO pt_ztcopa0013_cosp.
+        ENDIF.
+
+      ENDIF.
+
+    ENDLOOP.
+
+*- Registra dados do BW
+    LOOP AT pt_ztcopa0013 ASSIGNING <fs_ztcopa0013>
+                              WHERE perio EQ p_perio
+                                AND lvl   EQ '0'.
+
+      MOVE-CORRESPONDING <fs_ztcopa0013> TO wa_ztcopa0013_cosp.
+      wa_ztcopa0013_cosp-vv007  = <fs_ztcopa0013>-vv007.
+      wa_ztcopa0013_cosp-vv049  = <fs_ztcopa0013>-vv049.
+      wa_ztcopa0013_cosp-marca  = abap_false.
+      APPEND wa_ztcopa0013_cosp TO pt_ztcopa0013_cosp.
+    ENDLOOP.
+
+*- Limpa registros irrelevantes.
+    DELETE pt_ztcopa0013_cosp WHERE vv007 IS INITIAL
+                                AND vv049 IS INITIAL.
+
+  ENDIF.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  FILL_DATA
+*&---------------------------------------------------------------------*
+FORM fill_data CHANGING pt_data TYPE tt_data.
+
+  DATA ls_data LIKE LINE OF t_data.
+
+*- Caso seja reprocessamento de estornado não necessita nova extração
+  READ TABLE t_cust WITH KEY reproc = abap_true TRANSPORTING NO FIELDS.
+  IF  sy-subrc NE 0.
+
+    PERFORM select_ledbo.
+
+*- Preenchimento da tabela de saída
+    LOOP AT t_ztcopa0013_cosp ASSIGNING FIELD-SYMBOL(<fs_ztcopa0013>).
+
+      APPEND INITIAL LINE TO pt_data ASSIGNING FIELD-SYMBOL(<fs_data>).
+*- Condições iniciais
+      <fs_data>-id     = sy-tabix.
+      <fs_data>-erkrs  = p_erkrs.
+      <fs_data>-ledbo  = v_ledbo.
+      <fs_data>-perio  = <fs_ztcopa0013>-perio.
+      <fs_data>-vrgar  = p_vrgar.
+      <fs_data>-kokrs  = '1000'.
+      <fs_data>-bukrs  = <fs_ztcopa0013>-bukrs.
+      <fs_data>-kndnr  = abap_false. "Não informar cliente até 2a ordem
+      <fs_data>-ww008  = abap_false. "Não informar cliente até 2a ordem
+      <fs_data>-artnr  = <fs_ztcopa0013>-artnr.
+      <fs_data>-zz0040 = <fs_ztcopa0013>-zz0040.
+      <fs_data>-vbelv  = <fs_ztcopa0013>-belnr.
+      <fs_data>-udate  = sy-datum.
+      <fs_data>-utime  = sy-uzeit.
+      <fs_data>-saknr  = <fs_ztcopa0013>-saknr.
+      <fs_data>-kostl  = <fs_ztcopa0013>-kostl.
+      <fs_data>-uname  = sy-uname.
+      <fs_data>-versi  = abap_false.
+      <fs_data>-vbeln  = <fs_ztcopa0013>-vbeln.
+      <fs_data>-vv007  = <fs_ztcopa0013>-vv007.
+      <fs_data>-vv049  = <fs_ztcopa0013>-vv049.
+      <fs_data>-stats  = c_stats-active.
+      <fs_data>-werks  = abap_false.
+      <fs_data>-marca  = <fs_ztcopa0013>-marca.
+    ENDLOOP.
+
+  ELSE.
+    LOOP AT t_cust ASSIGNING FIELD-SYMBOL(<fs_cust>).
+      MOVE-CORRESPONDING <fs_cust> TO ls_data.
+      APPEND ls_data TO t_data.
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.
