@@ -1,0 +1,124 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZCOPA_RATEIO_GARANTIA_F02_N2
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Form  MOUNT_DATA_BY_LEDGER
+*&---------------------------------------------------------------------*
+
+*- Início das alterações +++TROLEM 30/03/2023
+FORM mount_data_by_ledger TABLES lt_collect
+                          USING ls_data TYPE y_data.
+
+  DATA: ls_collect TYPE ty_collect.
+
+  LOOP AT t_data INTO ls_data.
+    IF ls_data-stats NE 'I' OR ls_data-stats NE 'X'.
+
+      ls_collect-bukrs = ls_data-bukrs.
+      ls_collect-saknr = ls_data-saknr.
+*    ls_collect-kostl = ls_data-kostl .
+      ls_collect-vv007 = ls_data-vv007.
+      ls_collect-vv049 = ls_data-vv049.
+      ls_collect-total = ls_data-vv007 + ls_data-vv049.
+      COLLECT ls_collect INTO lt_collect.
+
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+
+FORM subtract TABLES lt_subtrai
+                     lt_collect LIKE lt_collect.
+
+  DATA: ls_subtrai    TYPE ty_subtrai.
+  DATA: ls_tot_ledger TYPE ty_tot_ledger.
+  DATA: ls_collect    TYPE ty_collect.
+
+  LOOP AT t_tot_ledger INTO ls_tot_ledger.
+    CLEAR ls_subtrai-collect.
+    READ TABLE lt_collect
+         WITH KEY bukrs = ls_tot_ledger-bukrs
+                  saknr = ls_tot_ledger-hkont
+         INTO ls_collect.
+
+    IF sy-subrc <> 0.
+      ls_subtrai-bukrs  = ls_tot_ledger-bukrs.  "CARDOG17+++
+      ls_subtrai-saknr  = ls_tot_ledger-hkont.  "CARDOG17+++
+      ls_subtrai-subtr  = ls_tot_ledger-dmbtr.  "CARDOG17+++
+      ls_subtrai-ledger = ls_tot_ledger-dmbtr.  "CARDOG17+++
+    ELSE.                                       "CARDOG17+++
+      ls_subtrai-bukrs   = ls_collect-bukrs.    "CARDOG17+++
+      ls_subtrai-saknr   = ls_collect-saknr.
+      ls_subtrai-subtr   = ls_tot_ledger-dmbtr - ls_collect-total.
+      ls_subtrai-collect = ls_collect-total.    "CARDOG17+++
+      ls_subtrai-ledger  = ls_tot_ledger-dmbtr. "CARDOG17+++
+    ENDIF.                                      "CARDOG17+++
+
+    APPEND ls_subtrai TO lt_subtrai.
+
+  ENDLOOP.
+
+ENDFORM.
+
+FORM percentage TABLES lt_porcent
+                       lt_subtrai LIKE lt_subtrai.
+
+  DATA: ls_porcent   TYPE ty_porcent,
+        lv_porc_conv TYPE string.
+  DATA: ls_tot_multi_level TYPE ty_tot_multi_level.
+  DATA: ls_subtrai TYPE ty_subtrai.
+
+  LOOP AT t_tot_multi_level INTO ls_tot_multi_level.
+
+*- Montar rotina LOOP na LT_SUBTRAI que não tem na T_TOT_MULTI_LEVEL p/ adicionar na T_DATA
+    READ TABLE lt_subtrai
+             WITH KEY bukrs = ls_tot_multi_level-bukrs
+                      saknr = ls_tot_multi_level-saknr
+             INTO ls_subtrai.
+
+    IF sy-subrc <> 0.
+      CONTINUE.
+    ENDIF.
+
+    ls_porcent-bukrs  = ls_tot_multi_level-bukrs.
+    ls_porcent-zz0040 = ls_tot_multi_level-zz0040.
+    ls_porcent-kostl  = ls_tot_multi_level-kostl.
+    ls_porcent-saknr  = ls_tot_multi_level-saknr.
+*    ls_porcent-soma   = ( ls_tot_multi_level-vv007 + ls_tot_multi_level-vv049 ).
+
+    IF ls_subtrai-subtr <> 0.
+      lv_porc_conv    = ( ls_tot_multi_level-vv007 + ls_tot_multi_level-vv049 ) /
+                          ls_subtrai-collect * 100.
+      ls_porcent-soma = ls_porcent-soma * ( lv_porc_conv / 100 ).
+*      ls_porcent-porc = CONV #( lv_porc_conv ).
+
+      CLASS cl_abap_container_utilities DEFINITION LOAD.
+      CALL METHOD cl_abap_container_utilities=>read_container_c
+        EXPORTING
+          im_container           = lv_porc_conv
+        IMPORTING
+          ex_value               = ls_porcent-porc
+        EXCEPTIONS
+          illegal_parameter_type = 1
+          OTHERS                 = 2.
+
+    ELSE.
+      CLEAR ls_porcent-porc.
+    ENDIF.
+
+    APPEND ls_porcent TO lt_porcent.
+
+  ENDLOOP.
+
+*- Cálculo das porcentagens sem conta
+  LOOP AT lt_subtrai ASSIGNING FIELD-SYMBOL(<fs_subtrai>).
+    READ TABLE t_tot_multi_level WITH KEY bukrs = <fs_subtrai>-bukrs
+                                          saknr = <fs_subtrai>-saknr
+                                          TRANSPORTING NO FIELDS.
+    IF sy-subrc NE 0.
+      <fs_subtrai>-unused = abap_true.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+*- Fim das alterações +++TROLEM 30/03/2023
