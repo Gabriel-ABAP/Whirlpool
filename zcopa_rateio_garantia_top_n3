@@ -1,0 +1,434 @@
+TYPES:
+  BEGIN OF y_work,
+    erkrs  TYPE tkebb-erkrs,
+    ledbo  TYPE ce11000-paledger,
+    vrgar  TYPE ce11000-vrgar,
+    versi  TYPE ce11000-versi,
+    perio  TYPE ce11000-perio,
+    kokrs  TYPE ce11000-kokrs,
+    bukrs  TYPE ce11000-bukrs,
+    kndnr  TYPE ce11000-kndnr,
+    ww008  TYPE ce11000-ww008,
+    artnr  TYPE ce11000-artnr,
+    werks  TYPE ce11000-werks,
+    zz0040 TYPE zz0040,
+    ww005  TYPE ce11000-ww005,  "Linha
+*    waers TYPE ce11000-rec_waers,
+    erlos  TYPE ce11000-erlos,
+    vv007  TYPE ce11000-vv007,
+    vv049  TYPE ce11000-vv049,            "campo novo
+*    porce  TYPE p DECIMALS 2,        "---CARDOG17
+    porce  TYPE p DECIMALS 4,         "+++CARDOG17
+    marca  TYPE zscopa0002_n2-marca,  "+++TROLEM 11/05/2023
+  END   OF y_work,
+  BEGIN OF y_data.
+    INCLUDE TYPE y_work.
+  TYPES:
+    vbelv TYPE vbelv,
+    vbeln TYPE vbeln,
+    saknr TYPE saknr,
+    kostl TYPE kostl,
+    belnr TYPE bseg-belnr,
+    waers TYPE ce11000-rec_waers,
+*  vv007 TYPE ce11000-vv007,
+    udate TYPE sy-datum,
+    utime TYPE sy-uzeit,
+    uname TYPE sy-uname,
+    stats TYPE ztcopa0002-stats,
+    icone TYPE icon_d,
+    perce TYPE p DECIMALS 3,
+    id    TYPE i,
+    delta TYPE abap_bool,
+    msg   TYPE bapi_msg,
+*  return TYPE bapiret2_t,
+  END   OF y_data,
+  BEGIN OF y_keys,
+    objid TYPE crmt_object_id_db,
+  END   OF y_keys,
+  BEGIN OF y_proc,
+    sign   TYPE  sign_cl,
+    option TYPE  option_cl,
+    low    TYPE  crmt_process_type_db,
+    high   TYPE  crmt_process_type_db,
+  END   OF y_proc,
+  BEGIN OF y_keys_v,
+    objid  TYPE crmt_object_id_db,
+    bukrs  TYPE bukrs,
+    saknr  TYPE saknr,
+    kostl  TYPE kostl,
+    wrbtr  TYPE wrbtr,
+    erlos  TYPE rke2_erlos,
+    erlos1 TYPE rke2_erlos,
+    belnr  TYPE bseg-belnr,
+  END   OF y_keys_v,
+  BEGIN OF y_head,
+    guid  TYPE crmt_object_guid,
+    xblnr TYPE bkpf-xblnr,
+    bukrs TYPE ce11000-bukrs,
+    lifnr TYPE ce11000-kndnr,
+  END   OF y_head,
+  BEGIN OF y_line,
+    head  TYPE crmt_object_guid,
+    guid  TYPE crmt_object_guid,
+    artnr TYPE ce11000-artnr,
+    wrbtr TYPE bseg-wrbtr,
+  END   OF y_line,
+  BEGIN OF y_garantia,
+    zobjid_9 TYPE  crmt_object_id_db,
+    zobjid_7 TYPE  crmt_object_id_db,
+    zguid_7  TYPE  crmt_object_guid,
+    zz0040   TYPE  char8,
+    zz0041   TYPE  char10,
+    mod_or   TYPE  char8,
+    ww005    TYPE  rkeg_ww005,
+  END   OF y_garantia,
+  BEGIN OF y_rateio.
+    INCLUDE TYPE y_garantia.
+  TYPES:
+    artnr TYPE artnr,
+    kndnr TYPE kunde_pa,
+    bukrs TYPE bukrs,
+    saknr TYPE saknr,
+    kostl TYPE kostl,
+    belnr TYPE bseg-belnr,
+    kokrs TYPE kokrs,
+    werks TYPE werks_d,
+    erlos TYPE rke2_erlos,
+    vv007 TYPE rke2_vv007,
+    vv049 TYPE rke2_vv049,
+  END   OF y_rateio.
+
+*- Início das alterações - CARDOG17
+TYPES: ty_range TYPE RANGE OF string,
+       BEGIN OF ty_bseg,
+         bukrs TYPE bseg-bukrs,
+         hkont TYPE bseg-hkont,
+         dmbtr TYPE bseg-dmbtr,
+       END OF ty_bseg,
+
+       BEGIN OF ty_tot_ledger,
+         bukrs TYPE bseg-bukrs,
+         hkont TYPE bseg-hkont,
+         dmbtr TYPE bseg-dmbtr,
+       END OF ty_tot_ledger,
+
+       BEGIN OF ty_tot_multi_level,
+         bukrs  TYPE bseg-bukrs,
+         zz0040 TYPE zz0040,
+         kostl  TYPE kostl,
+         saknr  TYPE saknr,
+         vv007  TYPE ce11000-vv007,
+         vv049  TYPE ce11000-vv049,
+       END OF ty_tot_multi_level,
+
+       BEGIN OF ty_tot_multi_level_semconta,
+         bukrs  TYPE bseg-bukrs,
+         zz0040 TYPE zz0040,
+         kostl  TYPE kostl,
+         vv007  TYPE ce11000-vv007,
+         vv049  TYPE ce11000-vv049,
+         soma   TYPE ce11000-vv049,
+         porc   TYPE p DECIMALS 4,
+       END OF ty_tot_multi_level_semconta,
+
+       BEGIN OF ty_tot_multi_level_aberto,
+         bukrs  TYPE bseg-bukrs,
+         zz0040 TYPE zz0040,
+         kostl  TYPE kostl,
+         saknr  TYPE saknr,
+         vv007  TYPE ce11000-vv007,
+         vv049  TYPE ce11000-vv049,
+         soma   TYPE ce11000-vv049,
+         porc   TYPE p DECIMALS 4,
+       END OF ty_tot_multi_level_aberto,
+
+       BEGIN OF ty_tot_empresa,
+         bukrs    TYPE bseg-bukrs,
+         semconta TYPE ce11000-vv049,
+       END OF ty_tot_empresa,
+
+       BEGIN OF ty_base_bw,
+         calmonth       TYPE char6,
+         co_area        TYPE char4,
+         costcenter     TYPE char10,
+         chrt_accts     TYPE char4,
+         gl_account     TYPE char10,
+         material       TYPE char18,
+         /bic/cgcrmdors TYPE char10,
+         /bic/cgcrmdcos TYPE char10,
+         recordmode     TYPE char1,
+         /bic/cgmod_agr TYPE char7,
+         /bic/cgnegocio TYPE char2,
+         amount(9)      TYPE p DECIMALS 2,
+         currency       TYPE char10,
+       END OF ty_base_bw,
+
+       BEGIN OF ty_base_bw_sorted,
+*         /bic/cgmod_agr TYPE char7,        "CARDOG17--- DEFECT #11
+*         costcenter     TYPE char10,       "CARDOG17--- DEFECT #11
+         costcenter     TYPE char10,        "CARDOG17+++ DEFECT #11
+         /bic/cgmod_agr TYPE char7,         "CARDOG17+++ DEFECT #11
+         gl_account     TYPE char10,
+         calmonth       TYPE char6,
+         co_area        TYPE char4,
+         chrt_accts     TYPE char4,
+         material       TYPE char18,
+         /bic/cgcrmdors TYPE char10,
+         /bic/cgcrmdcos TYPE char10,
+         recordmode     TYPE char1,
+         /bic/cgnegocio TYPE char2,
+         amount(9)      TYPE p DECIMALS 2,
+         currency       TYPE char10,
+       END OF ty_base_bw_sorted,
+
+       BEGIN OF ty_sum_cosp_cc,
+         bukrs  TYPE cosp-bukrs,
+         kstar  TYPE cosp-kstar,
+         objnr  TYPE cosp-objnr,
+         wtgxxx TYPE cosp-wtg001,
+         proce  TYPE char1,
+       END OF ty_sum_cosp_cc,
+
+       BEGIN OF ty_sum_cosp_conta,
+         bukrs  TYPE cosp-bukrs,
+         kstar  TYPE cosp-kstar,
+         wtgxxx TYPE cosp-wtg001,
+         proce  TYPE char1,
+       END OF ty_sum_cosp_conta,
+
+       BEGIN OF ty_sum_cosp_empr,
+         bukrs  TYPE cosp-bukrs,
+         wtgxxx TYPE cosp-wtg001,
+       END OF ty_sum_cosp_empr,
+
+       BEGIN OF ty_cosp,
+         objnr  TYPE cosp-objnr,
+         kstar  TYPE cosp-kstar,
+         bukrs  TYPE cosp-bukrs,
+         twaer  TYPE twaer,
+         wtg001 TYPE cosp-wtg001,
+         wtg002 TYPE cosp-wtg002,
+         wtg003 TYPE cosp-wtg003,
+         wtg004 TYPE cosp-wtg004,
+         wtg005 TYPE cosp-wtg005,
+         wtg006 TYPE cosp-wtg006,
+         wtg007 TYPE cosp-wtg007,
+         wtg008 TYPE cosp-wtg008,
+         wtg009 TYPE cosp-wtg009,
+         wtg010 TYPE cosp-wtg010,
+         wtg011 TYPE cosp-wtg011,
+         wtg012 TYPE cosp-wtg012,
+         proce  TYPE ztcopa0014-proce,
+         match  TYPE char1,
+       END OF ty_cosp,
+
+       BEGIN OF ty_sum_espelho,
+         kostl  TYPE kostl,         "Centro de custo
+         zz0040 TYPE zz0040,        "Mod.agrupador
+         perio  TYPE jahrper,
+         bukrs  TYPE bukrs,
+         saknr  TYPE saknr,
+         vv007  TYPE rke2_vv007,
+         vv049  TYPE rke2_vv049,
+       END OF ty_sum_espelho,
+
+       BEGIN OF ty_ztcopa0013.
+         INCLUDE TYPE ztcopa0013.
+         TYPES: match TYPE char1,
+       END OF ty_ztcopa0013,
+
+       BEGIN OF ty_ztcopa0002.
+         INCLUDE TYPE ztcopa0002.
+         TYPES: reproc TYPE char1,
+       END OF ty_ztcopa0002,
+
+       BEGIN OF ty_saldo_cosp_bw,
+         bukrs TYPE bukrs,
+         kostl TYPE kostl,
+         saknr TYPE saknr,
+         artnr TYPE artnr,
+         belnr TYPE bseg-belnr,
+         vbeln TYPE vbeln,
+         vv007 TYPE rke2_vv007,
+         vv049 TYPE rke2_vv049,
+         proce TYPE char1,
+       END OF ty_saldo_cosp_bw,
+
+       BEGIN OF ty_ztcopa0013_cosp,
+         perio  TYPE ztcopa0013-perio,
+         bukrs  TYPE ztcopa0013-bukrs,
+         saknr  TYPE ztcopa0013-saknr,
+         kostl  TYPE ztcopa0013-kostl,
+         artnr  TYPE artnr,
+         zz0040 TYPE ztcopa0013-zz0040,
+*         budat,
+         vbeln  TYPE bseg-belnr,
+         belnr  TYPE bseg-belnr,
+         vv007  TYPE ztcopa0013-vv007,
+         vv049  TYPE ztcopa0013-vv049,
+         perc   TYPE ztcopa0013-perc,
+         lvl    TYPE ztcopa0013-lvl,
+         proce  TYPE char1,
+         marca  TYPE char1,
+       END OF ty_ztcopa0013_cosp,
+
+       tt_ztcopa0013      TYPE STANDARD TABLE OF ztcopa0013 WITH DEFAULT KEY,
+       tt_ztcopa0013_reg  TYPE STANDARD TABLE OF ztcopa0013 WITH DEFAULT KEY,
+       tt_ztcopa0013_m    TYPE SORTED TABLE OF ty_ztcopa0013,
+       tt_sum_espelho     TYPE STANDARD TABLE OF ty_sum_espelho WITH DEFAULT KEY,
+       tt_base_bw_sorted  TYPE TABLE OF ty_base_bw_sorted,
+       tt_base_bw         TYPE TABLE OF ty_base_bw,
+       tt_cosp            TYPE STANDARD TABLE OF ty_cosp WITH DEFAULT KEY,
+       tt_sum_cosp_cc     TYPE STANDARD TABLE OF ty_sum_cosp_cc WITH DEFAULT KEY,
+       tt_sum_cosp_conta  TYPE STANDARD TABLE OF ty_sum_cosp_conta WITH DEFAULT KEY,
+       tt_sum_cosp_empr   TYPE STANDARD TABLE OF ty_sum_cosp_empr WITH DEFAULT KEY,
+       tt_saldo_cosp_bw   TYPE STANDARD TABLE OF ty_saldo_cosp_bw,
+       tt_ztcopa0013_cosp TYPE STANDARD TABLE OF ty_ztcopa0013_cosp,
+       tt_data            TYPE TABLE OF y_data.
+*- Fim das alterações - CARDOG17
+
+*- Início das alterações +++TROLEM 30/03/2023
+TYPES: BEGIN OF ty_collect,
+         bukrs TYPE bukrs,
+         saknr TYPE saknr,
+*           kostl TYPE kostl,
+         vv007 TYPE ce11000-vv007,
+         vv049 TYPE ce11000-vv049,
+         total TYPE ce11000-vv007,
+       END OF ty_collect.
+
+TYPES: BEGIN OF ty_subtrai,
+         bukrs   TYPE bukrs,
+         saknr   TYPE saknr,
+         subtr   TYPE ce11000-vv007,
+         collect TYPE ce11000-vv007,
+         ledger  TYPE ce11000-vv007,
+         unused  TYPE char1,
+       END OF ty_subtrai.
+
+TYPES: BEGIN OF ty_porcent,
+         bukrs  TYPE ty_tot_multi_level-bukrs,
+         zz0040 TYPE ty_tot_multi_level-zz0040,
+         kostl  TYPE ty_tot_multi_level-kostl,
+         saknr  TYPE ty_tot_multi_level-saknr,
+         soma   TYPE ce11000-vv007,
+         porc   TYPE zscopa0002_n2-porce,
+       END OF ty_porcent.
+*- Fim das alterações +++TROLEM 30/03/2023
+
+DATA:
+  t_keys_v        TYPE TABLE OF y_keys_v,
+  t_rateio        TYPE TABLE OF y_rateio,
+*  t_rateio_s TYPE TABLE OF y_rateio,
+  t_work          TYPE TABLE OF y_work,
+  t_field         TYPE TABLE OF bapi_copa_field,
+  t_copa          TYPE STANDARD TABLE OF ztcopa0013,
+  t_cust          TYPE TABLE OF ty_ztcopa0002,                              "CARDOG17+++
+  t_data          TYPE TABLE OF y_data,
+  t_keys          TYPE TABLE OF y_keys,
+  t_keys7         TYPE TABLE OF y_keys,
+  t_head          TYPE TABLE OF y_head,
+  t_garantia      TYPE TABLE OF y_garantia,
+  t_gar_linha     TYPE TABLE OF y_garantia,
+  t_garantia_orig TYPE TABLE OF y_garantia,
+  t_garantia9     TYPE TABLE OF y_garantia,
+  t_garantia7     TYPE TABLE OF y_garantia,
+  t_line          TYPE TABLE OF y_line,
+  r_bsart         TYPE RANGE OF ekko-bsart,
+  r_bstat         TYPE RANGE OF bkpf-bstat,
+  t_tvarv         TYPE STANDARD TABLE OF tvarvc,
+  l_tvarv         TYPE tvarvc,
+  r_insta         TYPE RANGE OF tvarvc-low WITH HEADER LINE,
+  r_hkont         TYPE RANGE OF tvarvc-low WITH HEADER LINE,
+  r_blart         TYPE RANGE OF tvarvc-low WITH HEADER LINE,
+  r_awtyp         TYPE RANGE OF tvarvc-low WITH HEADER LINE,
+  r_ccusto        TYPE ty_range,                                            "CARDOG17+++
+  t_proc          TYPE TABLE OF y_proc,
+  t_proc7         TYPE TABLE OF y_proc,
+  BEGIN OF s_budat,
+    past    TYPE bkpf-budat,
+    present TYPE bkpf-budat,
+    future  TYPE bkpf-budat,
+  END   OF  s_budat,
+  s_variant TYPE disvariant,
+  v_gjahr   TYPE bkpf-gjahr,
+  v_ledbo   TYPE ce11000-paledger,
+  v_versi   TYPE ce11000-versi,
+  v_plikz   TYPE ce11000-plikz,
+  v_crm     TYPE crmrfcpar-rfcdest,
+  v_ucomm   TYPE sy-ucomm.
+
+DATA:
+  o_container TYPE REF TO cl_gui_custom_container,
+  o_grid      TYPE REF TO cl_gui_alv_grid,
+  s_layout    TYPE lvc_s_layo,
+  t_fcat      TYPE TABLE OF lvc_s_fcat.
+
+DATA: t_tot_ledger               TYPE TABLE OF ty_tot_ledger,               "CARDOG17+++
+      t_tot_multi_level          TYPE TABLE OF ty_tot_multi_level,          "CARDOG17+++
+      t_tot_multi_level_semconta TYPE TABLE OF ty_tot_multi_level_semconta, "CARDOG17+++
+      t_tot_multi_level_aberto   TYPE TABLE OF ty_tot_multi_level_aberto,   "CARDOG17+++
+      t_tot_empresa              TYPE TABLE OF ty_tot_empresa,              "CARDOG17+++
+      t_base_bw                  TYPE TABLE OF ty_base_bw,                  "CARDOG17+++
+      t_ztcopa0012               TYPE TABLE OF ztcopa0012,                  "CARDOG17+++
+      t_ztcopa0013               TYPE tt_ztcopa0013,                        "CARDOG17+++
+      t_ztcopa0014               TYPE TABLE OF ztcopa0014,                  "CARDOG17+++
+      t_setleaf                  TYPE TABLE OF setleaf,                     "CARDOG17+++
+      t_sumcc_garantia           TYPE tt_ztcopa0013,                        "CARDOG17+++
+      t_sumcc_instalacao         TYPE tt_ztcopa0013,                        "CARDOG17+++
+      t_sumconta_garantia        TYPE tt_ztcopa0013,                        "CARDOG17+++
+      t_sumconta_instalacao      TYPE tt_ztcopa0013,                        "CARDOG17+++
+      t_saldo_cosp_bw            TYPE tt_saldo_cosp_bw,                     "CARDOG17+++
+      t_ztcopa0013_cosp          TYPE tt_ztcopa0013_cosp,                   "CARDOG17+++
+      t_ztcopa0013_regra         TYPE tt_ztcopa0013_reg.                    "CARDOG17+++
+
+
+DATA: lt_collect TYPE TABLE OF ty_collect. "TROLEM+++
+DATA: lt_subtrai TYPE TABLE OF ty_subtrai. "TROLEM+++
+DATA: lt_porcent TYPE TABLE OF ty_porcent. "TROLEM+++
+
+CONSTANTS:
+  BEGIN OF c_plikz,
+    real TYPE ce11000-plikz VALUE '0',
+  END   OF c_plikz,
+  BEGIN OF c_status,
+    created TYPE zistcr_req_pag-status VALUE 'C',
+  END   OF c_status,
+  BEGIN OF c_stats,
+    active   TYPE ztcopa0002-stats VALUE 'A',
+    reverse  TYPE ztcopa0002-stats VALUE 'X',
+    inactive TYPE ztcopa0002-stats VALUE 'I',
+    check    TYPE ztcopa0002-stats VALUE '0',
+    error    TYPE ztcopa0002-stats VALUE '9',
+    nao_cons TYPE ztcopa0002-stats VALUE 'N',
+  END   OF c_stats,
+  BEGIN OF c_icone,
+    undefined   TYPE icon_d VALUE '@00@',
+    error       TYPE icon_d VALUE '@5C@',
+    warning     TYPE icon_d VALUE '@5D@',
+    success     TYPE icon_d VALUE '@5B@',
+    information TYPE icon_d VALUE '@8P@',
+    empty       TYPE icon_d VALUE '@5F@',
+    checked     TYPE icon_d VALUE '@01@',
+    transport   TYPE icon_d VALUE '@4A@',
+    broken      TYPE icon_d VALUE '@03@',
+    active      TYPE icon_d VALUE '@2K@',
+    reverse     TYPE icon_d VALUE '@02@',
+    inactive    TYPE icon_d VALUE '@BZ@',
+    detail      TYPE icon_d VALUE '@16@',
+  END OF c_icone,
+  BEGIN OF c_ucomm,
+    back  TYPE sy-ucomm VALUE 'BACK',
+    close TYPE sy-ucomm VALUE 'CLOSE',
+    exit  TYPE sy-ucomm VALUE 'EXIT',
+  END   OF c_ucomm.
+
+CLASS cl_9000 DEFINITION.
+
+  PUBLIC SECTION.
+
+    METHODS handle_hotspot_click  FOR EVENT hotspot_click OF cl_gui_alv_grid IMPORTING e_row_id
+                                                                                       e_column_id
+                                                                                       es_row_no.
+
+ENDCLASS.                    "cl_9000 DEFINITION
