@@ -1,0 +1,15 @@
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_9000  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_9000 INPUT.
+
+  CASE v_ucomm.
+    WHEN c_ucomm-back OR c_ucomm-exit.
+      LEAVE TO SCREEN 0.
+    WHEN c_ucomm-close.
+      LEAVE PROGRAM.
+  ENDCASE.
+
+ENDMODULE.
