@@ -1,0 +1,89 @@
+REPORT zcopa_rateio_garantia_n3.
+
+TABLES:
+  ce11000.
+
+SELECTION-SCREEN BEGIN OF BLOCK blck1 WITH FRAME TITLE text-001.
+PARAMETERS p_erkrs TYPE tkebb-erkrs OBLIGATORY DEFAULT '1000'.
+* SELECT-OPTIONS s_vrgar FOR ce11000-vrgar OBLIGATORY.
+PARAMETERS p_perio TYPE ce11000-perio OBLIGATORY.
+SELECTION-SCREEN END   OF BLOCK blck1.
+
+SELECTION-SCREEN BEGIN OF BLOCK blck2 WITH FRAME TITLE text-002.
+SELECT-OPTIONS s_bukrs FOR ce11000-bukrs.
+SELECT-OPTIONS s_artnr FOR ce11000-artnr.
+SELECTION-SCREEN END   OF BLOCK blck2.
+
+SELECTION-SCREEN BEGIN OF BLOCK blck5 WITH FRAME TITLE text-005.
+PARAMETERS:
+  p_show RADIOBUTTON GROUP grp5 USER-COMMAND uc01 DEFAULT 'X',
+  p_exec RADIOBUTTON GROUP grp5,
+  p_reve RADIOBUTTON GROUP grp5.
+SELECTION-SCREEN SKIP 1.
+PARAMETERS p_check AS CHECKBOX DEFAULT abap_true.
+
+PARAMETERS p_rateio AS CHECKBOX DEFAULT abap_false.
+SELECTION-SCREEN SKIP 1.
+SELECTION-SCREEN:
+    PUSHBUTTON 1(40)  par1 USER-COMMAND par VISIBLE LENGTH 14,
+    PUSHBUTTON 17(40) par2 USER-COMMAND reg VISIBLE LENGTH 10.
+
+SELECTION-SCREEN END   OF BLOCK blck5.
+
+SELECTION-SCREEN BEGIN OF BLOCK blck7 WITH FRAME TITLE text-007.
+PARAMETERS p_vrgar  TYPE ce11000-vrgar DEFAULT 'W' OBLIGATORY.
+
+SELECTION-SCREEN END   OF BLOCK blck7.
+
+SELECTION-SCREEN BEGIN OF BLOCK blck8 WITH FRAME TITLE text-008.
+PARAMETERS p_varian LIKE disvariant-variant.
+SELECTION-SCREEN END   OF BLOCK blck8.
+
+INCLUDE zcopa_rateio_garantia_top_n3.
+INCLUDE zcopa_rateio_garantia_f01_n3.
+INCLUDE zcopa_rateio_garantia_f02_n3.
+INCLUDE zcopa_rateio_garantia_o01_n3.
+INCLUDE zcopa_rateio_garantia_i01_n3.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_varian.
+
+  PERFORM search_variant.
+
+AT SELECTION-SCREEN.
+* Execução da chamada pelo botão de parâmetros
+  PERFORM chama_parametros.
+
+INITIALIZATION.
+
+  PERFORM initialization.
+
+START-OF-SELECTION.
+
+  PERFORM start_of_selection.
+
+END-OF-SELECTION.
+
+  PERFORM end_of_selection.
+
+AT SELECTION-SCREEN ON RADIOBUTTON GROUP grp5.
+  LOOP AT SCREEN INTO DATA(wa_screen).
+    CASE sy-ucomm.
+      WHEN 'UC01'.
+        IF p_show IS INITIAL.
+          IF wa_screen-name EQ 'P_PERIO' OR
+             wa_screen-name EQ 'P_CHECK' OR
+             wa_screen-name EQ 'P_RATEIO'.
+            wa_screen-input = '1'.
+          ELSE.
+            wa_screen-input = '0'.
+          ENDIF.
+        ELSE.
+          IF wa_screen-name EQ 'P_VRGAR'.
+            wa_screen-input = '0'.
+          ELSE.
+            wa_screen-input = '1'.
+          ENDIF.
+        ENDIF.
+    ENDCASE.
+    MODIFY SCREEN FROM wa_screen.
+  ENDLOOP.
